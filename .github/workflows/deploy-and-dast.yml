@@ -10,11 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Azure CLI
-        uses: azure/cli@v1
-        with:
-          azcliversion: '2.55.0'
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -34,47 +29,15 @@ jobs:
         run: az acr login --name devsecopsucacr
 
       - name: Build and push auth-service image
-        run: |
-          docker build -t devsecopsucacr.azurecr.io/auth-service:latest ./auth-service
-          docker push devsecopsucacr.azurecr.io/auth-service:latest
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth-service
+          push: true
+          tags: devsecopsucacr.azurecr.io/auth-service:latest
 
       - name: Build and push rooms-service image
-        run: |
-          docker build -t devsecopsucacr.azurecr.io/rooms-service:latest ./rooms-service
-          docker push devsecopsucacr.azurecr.io/rooms-service:latest
-
-      - name: Ensure Web App has system-assigned identity
-        run: |
-          az webapp identity assign --name devsecopsuc-webapp --resource-group rg-devsecopsuc --query principalId -o tsv
-
-      - name: Grant ACR Pull role to WebApp identity
-        run: |
-          PRINCIPAL_ID=$(az webapp identity show --name devsecopsuc-webapp -g rg-devsecopsuc --query principalId -o tsv)
-          ACR_ID=$(az acr show -n devsecopsucacr -g rg-devsecopsuc --query id -o tsv)
-          az role assignment create --assignee-object-id $PRINCIPAL_ID --role AcrPull --scope $ACR_ID || true
-
-      - name: Configure multi-container using docker-compose
-        run: |
-          az webapp config container set \
-            --name devsecopsuc-webapp \
-            --resource-group rg-devsecopsuc \
-            --multicontainer-config-type compose \
-            --multicontainer-config-file docker-compose.yml
-
-      - name: Restart Web App
-        run: |
-          az webapp restart --name devsecopsuc-webapp --resource-group rg-devsecopsuc
-
-      - name: Wait for site to be up
-        run: |
-          for i in $(seq 1 20); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://devsecopsuc-webapp.azurewebsites.net || true)
-            echo "Status: $STATUS"
-            if [ "$STATUS" = "200" ]; then
-              echo "Site is up."
-              exit 0
-            fi
-            sleep 6
-          done
-          echo "Site did not respond with 200 after wait"
-          exit 1
+        uses: docker/build-push-action@v5
+        with:
+          context: ./rooms-service
+          push: true
+          tags: devsecopsucacr.azurecr.io/rooms-service:latest
