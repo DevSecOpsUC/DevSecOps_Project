@@ -7,27 +7,34 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
+      # 🔐 Login en Azure con credenciales del JSON (almacenadas en AZURE_CREDENTIALS)
       - name: Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # 🏗️ Crear grupo de recursos y desplegar infraestructura (App Service Linux + NGINX)
       - name: Ensure resource group exists and deploy Bicep
         run: |
           az group create -n rg-devsecopsuc -l eastus || true
           az deployment group create \
             -g rg-devsecopsuc \
             --template-file Unidad2_DespliegueSeguro/bicep/main.bicep \
-            --parameters webAppName=devsecopsuc-webapp appServicePlanName=asp-devsecopsuc
+            --parameters \
+              webAppName=webapp-devsecopsuc \
+              appServicePlanName=asp-devsecopsuc-linux
         env:
           AZURE_HTTP_USER_AGENT: 'devsecops-ci'
 
+      # 🔐 Login en Azure Container Registry
       - name: Login to ACR
         run: az acr login --name devsecopsucacr
 
+      # 🧱 Build y push de los servicios backend
       - name: Build and push auth-service image
         uses: docker/build-push-action@v5
         with:
@@ -41,3 +48,22 @@ jobs:
           context: ./rooms-service
           push: true
           tags: devsecopsucacr.azurecr.io/rooms-service:latest
+
+      # 🌐 Desplegar frontend a App Service (NGINX)
+      - name: Deploy frontend to App Service
+        run: |
+          FRONTEND_PATH="./frontend"
+          ZIP_FILE="frontend.zip"
+          WEBAPP_NAME="webapp-devsecopsuc"
+
+          # Empaqueta el frontend
+          cd $FRONTEND_PATH
+          zip -r ../$ZIP_FILE ./*
+          cd ..
+
+          # Despliega el zip al App Service Linux (NGINX)
+          az webapp deploy \
+            --resource-group rg-devsecopsuc \
+            --name $WEBAPP_NAME \
+            --src-path $ZIP_FILE \
+            --type zip
