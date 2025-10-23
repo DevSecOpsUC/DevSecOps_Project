@@ -1,47 +1,47 @@
-@description('Nombre del grupo de recursos donde se desplegará la aplicación.')
+@description('Nombre del grupo de recursos')
 param resourceGroupName string = 'rg-devsecopsuc'
 
-@description('Nombre de la aplicación web.')
-param webAppName string = 'devsecopsuc-webapp'
+@description('Ubicación de los recursos')
+param location string = 'eastus'
 
-@description('Ubicación del despliegue.')
-param location string = resourceGroup().location
+@description('Nombre del App Service Plan')
+param appServicePlanName string = 'asp-devsecopsuc-linux'
 
-@description('Nombre del plan de App Service.')
-param appServicePlanName string = 'asp-devsecopsuc'
+@description('Nombre de la aplicación web')
+param webAppName string = 'webapp-devsecopsuc'
 
-@description('Tipo de plan de servicio (por defecto, gratuito para pruebas).')
-param skuName string = 'F1'
-
-@description('Nivel de seguridad para las configuraciones por defecto.')
-param httpsOnly bool = true
-
-// 🔐 App Service Plan (Linux)
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
   sku: {
-    name: skuName
+    name: 'B1' // Plan básico, puedes subirlo a S1 si quieres más rendimiento
+    tier: 'Basic'
     capacity: 1
   }
-  kind: 'linux'
   properties: {
-    reserved: true // necesario para planes linux
+    reserved: true // <-- Muy importante: esto indica que es Linux
   }
 }
 
-// 🌐 Web App para contenedores Linux
-resource webApp 'Microsoft.Web/sites@2022-03-01' = {
+resource webApp 'Microsoft.Web/sites@2022-09-01' = {
   name: webAppName
   location: location
-  kind: 'app,linux,container'
   properties: {
     serverFarmId: appServicePlan.id
-    httpsOnly: httpsOnly
+    httpsOnly: true
     siteConfig: {
-      // linuxFxVersion se puede dejar vacío, lo definiremos desde GitHub Actions
-      ftpsState: 'Disabled'
-      minTlsVersion: '1.2'
+      linuxFxVersion: 'NGINX|latest' // Usa NGINX como imagen base
+      alwaysOn: true
+      appSettings: [
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'true'
+        }
+        {
+          name: 'WEBSITES_PORT'
+          value: '80'
+        }
+      ]
     }
   }
   dependsOn: [
@@ -49,6 +49,4 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
   ]
 }
 
-// 📤 Salidas
-output webAppUrl string = 'https://${webAppName}.azurewebsites.net'
-output appServicePlanId string = appServicePlan.id
+output webAppUrl string = 'https://${webApp.name}.azurewebsites.net'
