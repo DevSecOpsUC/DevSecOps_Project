@@ -1,0 +1,7 @@
+{
+  "target": "https://devsecopsuc-webapp.azurewebsites.net",
+  "context": "default",
+  "alertThreshold": "Low",
+  "riskThreshold": "Medium",
+  "reportFile": "zap_report.html"
+}

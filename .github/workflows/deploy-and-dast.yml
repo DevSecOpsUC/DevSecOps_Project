@@ -62,7 +62,7 @@ jobs:
       # 🌐 Desplegar frontend a App Service (NGINX)
       - name: Deploy frontend to App Service
         run: |
-          FRONTEND_PATH=".\Unidad2_DespliegueSeguro\webapp"
+          FRONTEND_PATH="./scripts/Unidad2_DespliegueSeguro/webapp"
           ZIP_FILE="frontend.zip"
           WEBAPP_NAME="webapp-devsecopsuc"
 
