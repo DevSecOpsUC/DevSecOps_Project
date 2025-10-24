@@ -1,97 +1,83 @@
-name: Deploy containers and DAST Scan
+name: Deploy and Security Scan (OWASP ZAP)
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy to Azure
+  deploy-and-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 🔹 Checkout del repositorio
         uses: actions/checkout@v4
 
-      - name: Login to Azure
+      - name: 🔹 Login en Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Register Container Registry provider
-        run: |
-          az provider register --namespace Microsoft.ContainerRegistry
-          az provider show -n Microsoft.ContainerRegistry --query "registrationState"
-
-      - name: Ensure resource group exists and deploy Bicep
+      - name: 🔹 Crear grupo de recursos
         run: |
           az group create -n rg-devsecopsuc -l eastus || true
+
+      - name: 🔹 Desplegar infraestructura con Bicep
+        run: |
           az deployment group create \
             -g rg-devsecopsuc \
-            --template-file Unidad2_DespliegueSeguro/bicep/main.bicep \
-            --parameters \
-              webAppName=webapp-devsecopsuc \
-              appServicePlanName=asp-devsecopsuc-linux
-        env:
-          AZURE_HTTP_USER_AGENT: 'devsecops-ci'
+            --template-file ./Unidad2_DespliegueYOperacionesSeguras/bicep/main.bicep \
+            --parameters webAppName=devsecopsuc-webapp appServicePlanName=asp-devsecopsuc
 
-      - name: Ensure ACR exists
-        run: |
-          az acr show -n devsecopsucacr -g rg-devsecopsuc || \
-          az acr create -n devsecopsucacr -g rg-devsecopsuc --sku Basic --admin-enabled true
-
-      - name: Login to ACR
+      - name: 🔹 Login al Azure Container Registry
         run: az acr login --name devsecopsucacr
 
-      - name: Build and push auth-service image
-        uses: docker/build-push-action@v5
-        with:
-          context: Unidad1_AsegurandoCodigoFuente/auth-service
-          push: true
-          tags: devsecopsucacr.azurecr.io/auth-service:latest
-
-      - name: Build and push rooms-service image
-        uses: docker/build-push-action@v5
-        with:
-          context: Unidad1_AsegurandoCodigoFuente/rooms-service
-          push: true
-          tags: devsecopsucacr.azurecr.io/rooms-service:latest
-
-      - name: Deploy frontend to App Service
+      - name: 🔹 Construir y subir imágenes Docker
         run: |
-          FRONTEND_PATH="Unidad2_DespliegueSeguro/webapp"
-          ZIP_FILE="frontend.zip"
-          WEBAPP_NAME="webapp-devsecopsuc"
+          docker build -t devsecopsucacr.azurecr.io/auth-service:latest -f ./Unidad2_DespliegueYOperacionesSeguras/docker/Dockerfile.auth .
+          docker push devsecopsucacr.azurecr.io/auth-service:latest
 
-          cd $FRONTEND_PATH
-          zip -r ../../$ZIP_FILE ./*
-          cd ../..
+          docker build -t devsecopsucacr.azurecr.io/rooms-service:latest -f ./Unidad2_DespliegueYOperacionesSeguras/docker/Dockerfile.rooms .
+          docker push devsecopsucacr.azurecr.io/rooms-service:latest
 
-          az webapp deploy \
+          docker build -t devsecopsucacr.azurecr.io/frontend:latest -f ./Unidad2_DespliegueYOperacionesSeguras/docker/Dockerfile.frontend .
+          docker push devsecopsucacr.azurecr.io/frontend:latest
+
+      - name: 🔹 Configurar contenedores en Azure Web App
+        run: |
+          az webapp config container set \
+            --name devsecopsuc-webapp \
             --resource-group rg-devsecopsuc \
-            --name $WEBAPP_NAME \
-            --src-path $ZIP_FILE \
-            --type zip
+            --multicontainer-config-type compose \
+            --multicontainer-config-file ./Unidad2_DespliegueYOperacionesSeguras/docker/docker-compose.yml
 
-  dast-scan:
-    name: OWASP ZAP DAST Scan
-    runs-on: ubuntu-latest
-    needs: build-and-deploy
+      - name: 🕓 Esperar despliegue antes de análisis
+        run: sleep 40
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: 🔹 Instalar OWASP ZAP CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          docker pull owasp/zap2docker-stable
 
-      - name: Run OWASP ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.10.0
-        with:
-          target: 'https://devsecopsuc-webapp.azurewebsites.net'
-          cmd_options: '-a'
-          allow_issue_writing: false
+      - name: 🧪 Ejecutar análisis OWASP ZAP
+        run: |
+          docker run --rm -v $(pwd):/zap/wrk:rw \
+            owasp/zap2docker-stable zap-baseline.py \
+            -t https://devsecopsuc-webapp.azurewebsites.net \
+            -r zap_report.html || true
 
-      - name: Upload ZAP report
+      - name: 🧾 Ajustar permisos del reporte
+        run: |
+          sudo chmod 777 zap_report.html || true
+          ls -l zap_report.html
+
+      - name: 📤 Subir reporte como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: ZAP-Report
-          path: zap-report.html
+          name: ZAP-Security-Report
+          path: zap_report.html
+
+      - name: ✅ Finalizar
+        run: echo "Despliegue y análisis OWASP ZAP completados correctamente."
