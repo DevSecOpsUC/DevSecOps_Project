@@ -16,7 +16,7 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
+
       - name: Register Container Registry provider
         run: |
           az provider register --namespace Microsoft.ContainerRegistry
@@ -62,7 +62,7 @@ jobs:
       # 🌐 Desplegar frontend a App Service (NGINX)
       - name: Deploy frontend to App Service
         run: |
-          FRONTEND_PATH="./frontend"
+          FRONTEND_PATH=".\Unidad2_DespliegueSeguro\webapp"
           ZIP_FILE="frontend.zip"
           WEBAPP_NAME="webapp-devsecopsuc"
 
