@@ -16,6 +16,11 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Register Container Registry provider
+        run: |
+          az provider register --namespace Microsoft.ContainerRegistry
+          az provider show -n Microsoft.ContainerRegistry --query "registrationState"
 
       # 🏗️ Crear grupo de recursos y desplegar infraestructura (App Service Linux + NGINX)
       - name: Ensure resource group exists and deploy Bicep
@@ -29,7 +34,7 @@ jobs:
               appServicePlanName=asp-devsecopsuc-linux
         env:
           AZURE_HTTP_USER_AGENT: 'devsecops-ci'
-          
+
       - name: Ensure ACR exists
         run: |
           az acr show -n devsecopsucacr -g rg-devsecopsuc || \
