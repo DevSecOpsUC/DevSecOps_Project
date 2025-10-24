@@ -1,4 +1,4 @@
-name: "CodeQL"
+name: "CodeQL - Unidad 1"
 
 on:
   push:
@@ -8,34 +8,33 @@ on:
 
 jobs:
   analyze:
-    name: Analyze
+    name: Analyze Source Code (Unidad 1)
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
+
     steps:
       - uses: actions/checkout@v4
 
-      # 1) Build explicitly (no usar input 'cmd' en la action)
       - name: Set up .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
       - name: Restore & Build
+        working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
           dotnet restore
           dotnet build --configuration Release
 
-      # 2) Init CodeQL v3
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: csharp
 
-      # 3) Autobuild (opcional) - no inputs invalidos
-      - name: Autobuild CodeQL (safe)
+      - name: Autobuild CodeQL
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis

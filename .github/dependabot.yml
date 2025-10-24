@@ -1,14 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/"            # si tu solution .sln está en la raíz
+    directory: "/Unidad1_AsegurandoCodigoFuente"
     schedule:
       interval: "weekly"
+
   - package-ecosystem: "nuget"
-    directory: "/auth-service"
+    directory: "/Unidad1_AsegurandoCodigoFuente/auth-service"
     schedule:
       interval: "weekly"
+
   - package-ecosystem: "nuget"
-    directory: "/rooms-service"
+    directory: "/Unidad1_AsegurandoCodigoFuente/rooms-service"
     schedule:
       interval: "weekly"

@@ -1,4 +1,4 @@
-name: SonarCloud - .NET (solution or services)
+name: SonarCloud - Unidad 1 (.NET)
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 jobs:
   sonar-dotnet:
-    name: Build and analyze .NET (solution or services)
     runs-on: ubuntu-latest
+    name: SonarCloud Analysis (.NET Unidad 1)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Cache Sonar dotnet tool
+      - name: Cache Sonar Scanner
         id: cache-sonar-scanner
         uses: actions/cache@v4
         with:
@@ -35,7 +35,7 @@ jobs:
           key: ${{ runner.os }}-sonar-scanner
           restore-keys: ${{ runner.os }}-sonar-scanner
 
-      - name: Install dotnet-sonarscanner (if cache miss)
+      - name: Install dotnet-sonarscanner
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         run: |
           mkdir -p "${RUNNER_TEMP}/scanner"
@@ -45,9 +45,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          echo "Validating SONAR_TOKEN..."
           status=$(curl -s -o /dev/null -w "%{http_code}" -u "${SONAR_TOKEN}:" https://sonarcloud.io/api/authentication/validate || true)
-          echo "Auth status: $status"
           if [ "$status" != "200" ]; then
             echo "ERROR: SONAR_TOKEN invalid or not authorized (HTTP $status)"
             exit 1
@@ -59,35 +57,23 @@ jobs:
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
           SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          echo "Using scanner at $SCANNER"
-          # Si no tienes organization en secrets, abortamos para evitar errores ambiguos.
-          if [ -z "$SONAR_ORGANIZATION" ]; then
-            echo "ERROR: SONAR_ORGANIZATION secret is empty. Please set it to the organization key in SonarCloud."
-            exit 1
-          fi
           "$SCANNER" begin /k:"$SONAR_PROJECT_KEY" /o:"$SONAR_ORGANIZATION" /d:sonar.login="$SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io"
 
-      - name: Restore & Build (solution if exists, otherwise build services)
+      - name: Restore & Build
+        working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
-          # Si hay un .sln en la raíz lo construimos; si no, intentamos compilar los proyectos de los servicios.
           if ls *.sln 1> /dev/null 2>&1; then
-            echo "Solution found, restoring and building solution:"
-            ls *.sln
             dotnet restore
             dotnet build --configuration Release
-          else
-            echo "No solution found: building individual projects"
-            dotnet restore ./auth-service/auth-service.csproj
-            dotnet build ./auth-service/auth-service.csproj -c Release
-            dotnet restore ./rooms-service/rooms-service.csproj
-            dotnet build ./rooms-service/rooms-service.csproj -c Release
           fi
 
       - name: End SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
           SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
           "$SCANNER" end /d:sonar.login="$SONAR_TOKEN"
