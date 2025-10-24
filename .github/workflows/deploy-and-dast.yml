@@ -29,6 +29,11 @@ jobs:
               appServicePlanName=asp-devsecopsuc-linux
         env:
           AZURE_HTTP_USER_AGENT: 'devsecops-ci'
+          
+      - name: Ensure ACR exists
+        run: |
+          az acr show -n devsecopsucacr -g rg-devsecopsuc || \
+          az acr create -n devsecopsucacr -g rg-devsecopsuc --sku Basic --admin-enabled true
 
       # 🔐 Login en Azure Container Registry
       - name: Login to ACR
