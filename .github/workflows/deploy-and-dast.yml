@@ -75,32 +75,23 @@ jobs:
             --type zip
 
   dast-scan:
-    name: OWASP ZAP Baseline Scan
+    name: OWASP ZAP DAST Scan
     runs-on: ubuntu-latest
+    needs: build-and-deploy
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Ejecuta el análisis DAST
-      - name: Run ZAP Baseline Scan
+      - name: Run OWASP ZAP baseline scan
         uses: zaproxy/action-baseline@v0.10.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target: 'https://tu-sitio-o-app.com' # ⚠️ Cambia por tu URL real
-          cmd_options: '-a' # Escaneo activo, usa '-t 5m' si quieres limitar el tiempo
-          rules_file_name: '.zap/rules.tsv' # Opcional: reglas personalizadas
-          fail_action: false # Evita que el job falle por findings
+          target: 'https://devsecopsuc-webapp.azurewebsites.net'
+          cmd_options: '-a'
+          allow_issue_writing: false
 
-      # Verifica los archivos generados
-      - name: List ZAP report files
-        run: ls -l
-
-      # Carga los reportes como artefactos
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-Report
-          path: |
-            report_html.html
-            report_md.md
-            report_json.json
+          path: zap-report.html
