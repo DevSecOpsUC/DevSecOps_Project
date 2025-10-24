@@ -1,24 +1,24 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <title>Microservices demo</title>
+  <meta charset="utf-8" />
+  <title>Rooms - DevSecOps UC</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Rooms</h1>
-  <button id="btn">Cargar habitaciones</button>
-  <pre id="out"></pre>
+  <header>
+    <h1>Habitaciones Disponibles</h1>
+    <button id="btn">Cargar habitaciones</button>
+  </header>
 
-<script>
-document.getElementById('btn').addEventListener('click', async () => {
-  try {
-    const res = await fetch('https://devsecopsuc-api.azurewebsites.net/rooms');
-    const data = await res.json();
-    document.getElementById('out').textContent = JSON.stringify(data, null, 2);
-  } catch (e) {
-    document.getElementById('out').textContent = 'Error: ' + e;
-  }
-});
-</script>
+  <main id="out">
+    <p>Haz clic en el botón para ver las habitaciones disponibles.</p>
+  </main>
+
+  <footer>
+    <p>© 2025 DevSecOps UC - Despliegue Seguro</p>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
