@@ -75,30 +75,34 @@ jobs:
             --type zip
 
   dast-scan:
-      name: OWASP ZAP DAST Scan
-      runs-on: ubuntu-latest
-      needs: build-and-deploy
+    name: OWASP ZAP DAST Scan (Stable)
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: 🔹 Checkout repo
+        uses: actions/checkout@v4
 
-        - name: 🧪 Ejecutar análisis OWASP ZAP
-          run: |
-            docker pull owasp/zap2docker-stable
-            docker run --rm -v $(pwd):/zap/wrk:rw \
-              owasp/zap2docker-stable zap-baseline.py \
-              -t https://webapp-devsecopsuc.azurewebsites.net \
-              -r zap_report.html || true
+      - name: 🧪 Ejecutar OWASP ZAP (Baseline Scan)
+        run: |
+          docker pull owasp/zap2docker-stable
+          mkdir -p zap-output
+          docker run --rm -v $(pwd)/zap-output:/zap/wrk:rw \
+            owasp/zap2docker-stable zap-baseline.py \
+            -t https://webapp-devsecopsuc.azurewebsites.net \
+            -r zap_report.html \
+            -J zap_report.json \
+            -w zap_report.md \
+            -a || true
 
-        - name: 🔧 Ajustar permisos y verificar archivo
-          run: |
-            sudo chmod 777 zap_report.html || true
-            ls -l zap_report.html
+      - name: 📋 Verificar archivos generados
+        run: ls -la zap-output
 
-        - name: 📤 Subir reporte como artefacto
-          uses: actions/upload-artifact@v4
-          with:
-            name: ZAP-DAST-Report
-            path: zap_report.html
+      - name: 🔧 Ajustar permisos
+        run: sudo chmod -R 777 zap-output || true
 
+      - name: 📤 Subir reportes como artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAP-DAST-Reports
+          path: zap-output
