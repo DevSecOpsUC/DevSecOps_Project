@@ -83,12 +83,20 @@ jobs:
       - name: 🔹 Checkout repo
         uses: actions/checkout@v4
 
+      - name: 🔧 Permitir ejecución de Docker
+        run: |
+          sudo systemctl start docker
+          docker --version
+
       - name: 🧪 Ejecutar OWASP ZAP (Baseline Scan)
         run: |
-          docker pull owasp/zap2docker-stable
           mkdir -p zap-output
+          echo "Descargando imagen de OWASP ZAP..."
+          docker pull ghcr.io/zaproxy/zaproxy:stable
+
+          echo "Ejecutando análisis de seguridad..."
           docker run --rm -v $(pwd)/zap-output:/zap/wrk:rw \
-            owasp/zap2docker-stable zap-baseline.py \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t https://webapp-devsecopsuc.azurewebsites.net \
             -r zap_report.html \
             -J zap_report.json \
@@ -97,9 +105,6 @@ jobs:
 
       - name: 📋 Verificar archivos generados
         run: ls -la zap-output
-
-      - name: 🔧 Ajustar permisos
-        run: sudo chmod -R 777 zap-output || true
 
       - name: 📤 Subir reportes como artefactos
         uses: actions/upload-artifact@v4
