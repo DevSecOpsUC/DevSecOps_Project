@@ -83,30 +83,35 @@ jobs:
       - name: 🔹 Checkout repo
         uses: actions/checkout@v4
 
-      - name: 🔧 Permitir ejecución de Docker
+      - name: 🧰 Preparar entorno
         run: |
           sudo systemctl start docker
-          docker --version
+          mkdir -p zap-output
+          sudo chmod -R 777 zap-output
+          echo "Ruta actual: $GITHUB_WORKSPACE"
+          ls -la
 
       - name: 🧪 Ejecutar OWASP ZAP (Baseline Scan)
         run: |
-          mkdir -p zap-output
-          echo "Descargando imagen de OWASP ZAP..."
           docker pull ghcr.io/zaproxy/zaproxy:stable
+          echo "Iniciando escaneo contra la app..."
+          docker run --rm \
+            -v $GITHUB_WORKSPACE/zap-output:/zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t https://webapp-devsecopsuc.azurewebsites.net \
+              -r zap_report.html \
+              -J zap_report.json \
+              -w zap_report.md \
+              -a || true
 
-          echo "Ejecutando análisis de seguridad..."
-          docker run --rm -v $(pwd)/zap-output:/zap/wrk:rw \
-            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t https://webapp-devsecopsuc.azurewebsites.net \
-            -r zap_report.html \
-            -J zap_report.json \
-            -w zap_report.md \
-            -a || true
-
-      - name: 📋 Verificar archivos generados
-        run: ls -la zap-output
+      - name: 🧾 Listar archivos generados
+        run: |
+          echo "Verificando zap-output..."
+          ls -la zap-output || echo "❌ No se encontraron reportes"
 
       - name: 📤 Subir reportes como artefactos
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-DAST-Reports
