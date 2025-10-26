@@ -1,11 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const loginPage = document.getElementById("login-page");
+  const roomsPage = document.getElementById("rooms-page");
   const loginBtn = document.getElementById("login-btn");
+  const logoutBtn = document.getElementById("logout-btn");
   const loadBtn = document.getElementById("load-btn");
-  const loginSection = document.getElementById("login-section");
-  const roomsSection = document.getElementById("rooms-section");
   const loginMsg = document.getElementById("login-msg");
   const userLabel = document.getElementById("user-label");
   const roomsDiv = document.getElementById("rooms");
+
+  // Si ya hay sesión, entra directo
+  if (localStorage.getItem("token")) {
+    showRoomsPage();
+  }
 
   loginBtn.addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
@@ -21,12 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error("Credenciales inválidas");
       const data = await res.json();
       localStorage.setItem("token", data.token);
-      userLabel.textContent = data.user;
-      loginSection.classList.add("hidden");
-      roomsSection.classList.remove("hidden");
+      userLabel.textContent = `👤 ${data.user}`;
+      showRoomsPage();
     } catch (err) {
       loginMsg.textContent = err.message;
     }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    showLoginPage();
   });
 
   loadBtn.addEventListener("click", async () => {
@@ -45,4 +55,18 @@ document.addEventListener("DOMContentLoaded", () => {
       roomsDiv.innerHTML = "<p style='color:red;'>No se pudieron cargar las habitaciones</p>";
     }
   });
+
+  function showRoomsPage() {
+    loginPage.classList.add("hidden");
+    roomsPage.classList.remove("hidden");
+    loginPage.classList.remove("active");
+    roomsPage.classList.add("active");
+  }
+
+  function showLoginPage() {
+    loginPage.classList.remove("hidden");
+    roomsPage.classList.add("hidden");
+    roomsPage.classList.remove("active");
+    loginPage.classList.add("active");
+  }
 });
