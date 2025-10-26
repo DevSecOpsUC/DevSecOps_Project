@@ -2,18 +2,18 @@ version: '3.8'
 
 services:
   frontend:
-    image: devsecopsucacr.azurecr.io/frontend-web:latest
+    image: devsecopsuc/frontend-web:latest
     ports:
       - "8080:8080"
+    restart: always
     depends_on:
       - auth
       - rooms
-    restart: always
 
   auth:
-    image: devsecopsucacr.azurecr.io/auth-service:latest
+    image: devsecopsuc/auth-service:latest
     restart: always
 
   rooms:
-    image: devsecopsucacr.azurecr.io/rooms-service:latest
+    image: devsecopsuc/rooms-service:latest
     restart: always
