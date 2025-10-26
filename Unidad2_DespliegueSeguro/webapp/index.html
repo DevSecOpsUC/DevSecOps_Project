@@ -1,33 +1,39 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>DevSecOps UC - Sistema de Habitaciones</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevSecOps UC - Habitaciones</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>🏠 DevSecOps UC - Sistema de Habitaciones</h1>
-    <div id="login-container">
-      <input type="text" id="username" placeholder="Usuario" />
-      <input type="password" id="password" placeholder="Contraseña" />
-      <button id="login-btn">Ingresar</button>
-      <span id="login-msg"></span>
-    </div>
+  <header class="navbar">
+    <h1>🏠 DevSecOps UC</h1>
+    <nav id="nav-user">
+      <span id="user-label">Invitado</span>
+    </nav>
   </header>
 
-  <main>
-    <section id="dashboard">
+  <main class="container">
+    <section id="login-section" class="card">
+      <h2>Iniciar Sesión</h2>
+      <input type="text" id="username" placeholder="Usuario" required>
+      <input type="password" id="password" placeholder="Contraseña" required>
+      <button id="login-btn">Ingresar</button>
+      <p id="login-msg"></p>
+    </section>
+
+    <section id="rooms-section" class="card hidden">
       <h2>Habitaciones Disponibles</h2>
       <button id="load-btn">Cargar Habitaciones</button>
-      <div id="rooms" class="rooms-grid"></div>
+      <div id="rooms" class="grid"></div>
     </section>
   </main>
 
   <footer>
-    <p>© 2025 DevSecOps UC | Despliegue Seguro</p>
+    <p>© 2025 DevSecOps UC - Despliegue Seguro</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
