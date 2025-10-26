@@ -60,14 +60,6 @@ jobs:
           file: Unidad2_DespliegueSeguro/docker/Dockerfile.frontend
           push: true
           tags: ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
-          
-      - name: 🧱 Build and push frontend-web (with updated nginx.conf)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Unidad2_DespliegueSeguro/docker/Dockerfile.frontend
-          push: true
-          tags: ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
 
       - name: 🚀 Configure Azure WebApp with Docker Compose
         run: |
