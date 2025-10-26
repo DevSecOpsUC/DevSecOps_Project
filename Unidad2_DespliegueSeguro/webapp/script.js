@@ -3,10 +3,8 @@ document.getElementById('btn').addEventListener('click', async () => {
   out.innerHTML = '<p>Cargando habitaciones...</p>';
 
   try {
-    // Usa el proxy del Nginx del compose: /api/rooms
-    const res = await fetch('/api/rooms');
+    const res = await fetch('/api/rooms'); // ✅ siempre relativo
     if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
-
     const data = await res.json();
 
     out.innerHTML = data.map(r => `
@@ -16,7 +14,6 @@ document.getElementById('btn').addEventListener('click', async () => {
       </div>
     `).join('');
   } catch (e) {
-    // Fallback local si la API no responde
     const mock = [
       { Name: 'Habitación 101', Price: 680000 },
       { Name: 'Habitación 202', Price: 550000 },
