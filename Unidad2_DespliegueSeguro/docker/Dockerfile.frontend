@@ -1,9 +1,6 @@
 FROM nginx:stable
 
-# Configuración Nginx
-COPY Unidad2_DespliegueSeguro/docker/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copia el frontend completo
+COPY Unidad2_DespliegueSeguro/docker/nginx.conf /etc/nginx/nginx.conf
 COPY Unidad2_DespliegueSeguro/webapp/ /usr/share/nginx/html/
 
 EXPOSE 8080
