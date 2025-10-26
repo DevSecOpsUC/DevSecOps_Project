@@ -1,11 +1,5 @@
-# Imagen base de NGINX
-FROM nginx:latest
-
-# Copiar archivos del frontend (HTML, CSS, JS)
-COPY ../webapp /usr/share/nginx/html
-
-# Reemplazar configuración de NGINX
-COPY ./nginx.conf /etc/nginx/nginx.conf
-
-# Exponer puerto 80
+FROM nginx:stable
+# Copia nginx.conf y el webapp usando rutas desde la raíz del repo (context = ../..)
+COPY Unidad2_DespliegueSeguro/docker/nginx.conf /etc/nginx/nginx.conf
+COPY Unidad2_DespliegueSeguro/webapp/ /usr/share/nginx/html/
 EXPOSE 80

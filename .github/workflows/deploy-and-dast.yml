@@ -4,113 +4,111 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+env:
+  RG_NAME: rg-devsecopsuc
+  ACR_NAME: devsecopsucacr
+  WEBAPP_NAME: webapp-devsecopsuc
+  LOCATION: eastus
 
 jobs:
   build-and-deploy:
-    name: Build and Deploy to Azure
     runs-on: ubuntu-latest
+    name: Build and Deploy Containers to Azure
 
     steps:
-      - name: Checkout repository
+      - name: 📦 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Login to Azure
+      - name: 🔑 Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Register Container Registry provider
+      - name: 🧱 Ensure Resource Group and ACR exist
         run: |
-          az provider register --namespace Microsoft.ContainerRegistry
-          az provider show -n Microsoft.ContainerRegistry --query "registrationState"
+          az group create -n $RG_NAME -l $LOCATION || true
+          az acr show -n $ACR_NAME -g $RG_NAME || \
+          az acr create -n $ACR_NAME -g $RG_NAME --sku Basic --admin-enabled true
 
-      - name: Ensure resource group exists and deploy Bicep
-        run: |
-          az group create -n rg-devsecopsuc -l eastus || true
-          az deployment group create \
-            -g rg-devsecopsuc \
-            --template-file Unidad2_DespliegueSeguro/bicep/main.bicep \
-            --parameters \
-              webAppName=webapp-devsecopsuc \
-              appServicePlanName=asp-devsecopsuc-linux
-        env:
-          AZURE_HTTP_USER_AGENT: 'devsecops-ci'
+      - name: 🔐 Login to ACR
+        run: az acr login --name $ACR_NAME
 
-      - name: Ensure ACR exists
-        run: |
-          az acr show -n devsecopsucacr -g rg-devsecopsuc || \
-          az acr create -n devsecopsucacr -g rg-devsecopsuc --sku Basic --admin-enabled true
-
-      - name: Login to ACR
-        run: az acr login --name devsecopsucacr
-
-      - name: Build and push auth-service image
+      # Build & push .NET microservices
+      - name: 🧱 Build and push auth-service
         uses: docker/build-push-action@v5
         with:
-          context: Unidad1_AsegurandoCodigoFuente/auth-service
+          context: .
+          file: Unidad2_DespliegueSeguro/docker/Dockerfile.auth
           push: true
-          tags: devsecopsucacr.azurecr.io/auth-service:latest
+          tags: ${{ env.ACR_NAME }}.azurecr.io/auth-service:latest
 
-      - name: Build and push rooms-service image
+      - name: 🧱 Build and push rooms-service
         uses: docker/build-push-action@v5
         with:
-          context: Unidad1_AsegurandoCodigoFuente/rooms-service
+          context: .
+          file: Unidad2_DespliegueSeguro/docker/Dockerfile.rooms
           push: true
-          tags: devsecopsucacr.azurecr.io/rooms-service:latest
+          tags: ${{ env.ACR_NAME }}.azurecr.io/rooms-service:latest
 
-      - name: Deploy frontend to App Service
+      # Build & push frontend (Nginx)
+      - name: 🧱 Build and push frontend-web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Unidad2_DespliegueSeguro/docker/Dockerfile.frontend
+          push: true
+          tags: ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
+
+      - name: 🔐 Configure ACR credentials for WebApp
         run: |
-          FRONTEND_PATH="Unidad2_DespliegueSeguro/webapp"
-          ZIP_FILE="frontend.zip"
-          WEBAPP_NAME="webapp-devsecopsuc"
-
-          cd $FRONTEND_PATH
-          zip -r ../../$ZIP_FILE ./*
-          cd ../..
-
-          az webapp deploy \
-            --resource-group rg-devsecopsuc \
+          ACR_USER=$(az acr credential show -n $ACR_NAME --query "username" -o tsv)
+          ACR_PASS=$(az acr credential show -n $ACR_NAME --query "passwords[0].value" -o tsv)
+          az webapp config container set \
             --name $WEBAPP_NAME \
-            --src-path $ZIP_FILE \
-            --type zip
+            --resource-group $RG_NAME \
+            --docker-registry-server-user $ACR_USER \
+            --docker-registry-server-password $ACR_PASS \
+            --docker-registry-server-url https://$ACR_NAME.azurecr.io
+
+      - name: 🚀 Configure Azure WebApp with Docker Compose
+        run: |
+          az webapp config container set \
+            --name $WEBAPP_NAME \
+            --resource-group $RG_NAME \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
 
   dast-scan:
-    name: OWASP ZAP DAST Scan (Stable)
     runs-on: ubuntu-latest
+    name: OWASP ZAP DAST Scan
     needs: build-and-deploy
 
     steps:
       - name: 🔹 Checkout repo
         uses: actions/checkout@v4
 
-      - name: 🧰 Preparar entorno
+      - name: 🧰 Prepare environment
         run: |
           sudo systemctl start docker
           mkdir -p zap-output
           sudo chmod -R 777 zap-output
-          echo "Ruta actual: $GITHUB_WORKSPACE"
-          ls -la
 
-      - name: 🧪 Ejecutar OWASP ZAP (Baseline Scan)
+      - name: 🧪 Run OWASP ZAP Baseline Scan
         run: |
           docker pull ghcr.io/zaproxy/zaproxy:stable
-          echo "Iniciando escaneo contra la app..."
           docker run --rm \
             -v $GITHUB_WORKSPACE/zap-output:/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-              -t https://webapp-devsecopsuc.azurewebsites.net \
+              -t https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/rooms \
               -r zap_report.html \
               -J zap_report.json \
               -w zap_report.md \
               -a || true
 
-      - name: 🧾 Listar archivos generados
-        run: |
-          echo "Verificando zap-output..."
-          ls -la zap-output || echo "❌ No se encontraron reportes"
-
-      - name: 📤 Subir reportes como artefactos
+      - name: 📤 Upload ZAP Reports
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:

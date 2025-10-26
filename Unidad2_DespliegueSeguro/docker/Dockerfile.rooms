@@ -6,13 +6,14 @@ EXPOSE 80
 # Etapa de compilación
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ./rooms-service/*.csproj .
+# Rutas desde la raíz del repo (build context = ../..)
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/*.csproj .
 RUN dotnet restore
-COPY ./auth-service .
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/ .
 RUN dotnet publish -c Release -o /app/publish
 
 # Imagen final
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "auth-service.dll"]
+ENTRYPOINT ["dotnet", "rooms-service.dll"]
