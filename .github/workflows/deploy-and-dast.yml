@@ -26,16 +26,24 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # --------------------------------------------------------------------
+      # Ensure resource group and ACR exist
+      # --------------------------------------------------------------------
       - name: 🧱 Ensure Resource Group and ACR exist
         run: |
           az group create -n $RG_NAME -l $LOCATION || true
           az acr show -n $ACR_NAME -g $RG_NAME || \
           az acr create -n $ACR_NAME -g $RG_NAME --sku Basic --admin-enabled true
 
+      # --------------------------------------------------------------------
+      # Login to ACR
+      # --------------------------------------------------------------------
       - name: 🔐 Login to ACR
         run: az acr login --name $ACR_NAME
 
-      # Build & push .NET microservices
+      # --------------------------------------------------------------------
+      # Build & push microservices (.NET)
+      # --------------------------------------------------------------------
       - name: 🧱 Build and push auth-service
         uses: docker/build-push-action@v5
         with:
@@ -52,7 +60,9 @@ jobs:
           push: true
           tags: ${{ env.ACR_NAME }}.azurecr.io/rooms-service:latest
 
+      # --------------------------------------------------------------------
       # Build & push frontend (Nginx)
+      # --------------------------------------------------------------------
       - name: 🧱 Build and push frontend-web
         uses: docker/build-push-action@v5
         with:
@@ -61,14 +71,9 @@ jobs:
           push: true
           tags: ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
 
-      - name: 🚀 Configure Azure WebApp with Docker Compose
-        run: |
-          az webapp config container set \
-            --name $WEBAPP_NAME \
-            --resource-group $RG_NAME \
-            --multicontainer-config-type compose \
-            --multicontainer-config-file Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
-
+      # --------------------------------------------------------------------
+      # Configure ACR credentials in the WebApp
+      # --------------------------------------------------------------------
       - name: 🔐 Configure ACR credentials for WebApp
         run: |
           ACR_USER=$(az acr credential show -n $ACR_NAME --query "username" -o tsv)
@@ -80,14 +85,32 @@ jobs:
             --docker-registry-server-password $ACR_PASS \
             --docker-registry-server-url https://$ACR_NAME.azurecr.io
 
-      - name: 🚀 Configure Azure WebApp with Docker Compose
+      # --------------------------------------------------------------------
+      # Deploy docker-compose configuration to Azure WebApp
+      # --------------------------------------------------------------------
+      - name: 🚀 Deploy docker-compose configuration
         run: |
           az webapp config container set \
             --name $WEBAPP_NAME \
             --resource-group $RG_NAME \
             --multicontainer-config-type compose \
             --multicontainer-config-file Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
+          echo "✅ Docker Compose configuration applied successfully."
 
+      # --------------------------------------------------------------------
+      # Validate deployment status
+      # --------------------------------------------------------------------
+      - name: ✅ Verify container configuration
+        run: |
+          echo "Current container configuration:"
+          az webapp show \
+            --name $WEBAPP_NAME \
+            --resource-group $RG_NAME \
+            --query "siteConfig.linuxFxVersion" -o tsv
+
+  # ----------------------------------------------------------------------
+  # OWASP ZAP DAST Scan
+  # ----------------------------------------------------------------------
   dast-scan:
     runs-on: ubuntu-latest
     name: OWASP ZAP DAST Scan
@@ -106,6 +129,7 @@ jobs:
       - name: 🧪 Run OWASP ZAP Baseline Scan
         run: |
           docker pull ghcr.io/zaproxy/zaproxy:stable
+          echo "Scanning https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/rooms ..."
           docker run --rm \
             -v $GITHUB_WORKSPACE/zap-output:/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
@@ -117,7 +141,7 @@ jobs:
               -a || true
 
       - name: 📤 Upload ZAP Reports
-        if: success() || failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-DAST-Reports
