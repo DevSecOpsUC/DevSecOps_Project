@@ -63,13 +63,13 @@ jobs:
       # --------------------------------------------------------------------
       # Build & push frontend (Nginx)
       # --------------------------------------------------------------------
-      - name: 🧱 Build and push frontend-web
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Unidad2_DespliegueSeguro/docker/Dockerfile.frontend
-          push: true
-          tags: ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
+      - name: 🧱 Build and push frontend-web (Azure CLI)
+        run: |
+          az acr build \
+            --registry $ACR_NAME \
+            --image frontend-web:latest \
+            --file Unidad2_DespliegueSeguro/docker/Dockerfile.frontend \
+            .
 
       # --------------------------------------------------------------------
       # Configure ACR credentials in the WebApp
