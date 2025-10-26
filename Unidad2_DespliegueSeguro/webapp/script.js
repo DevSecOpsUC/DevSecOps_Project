@@ -1,30 +1,46 @@
-document.getElementById('btn').addEventListener('click', async () => {
-  const out = document.getElementById('out');
-  out.innerHTML = '<p>Cargando habitaciones...</p>';
+const loginBtn = document.getElementById('login-btn');
+const loadBtn = document.getElementById('load-btn');
+const msg = document.getElementById('login-msg');
+const loginSection = document.getElementById('login-section');
+const dashboard = document.getElementById('dashboard');
+
+loginBtn.addEventListener('click', async () => {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  msg.textContent = "Verificando credenciales...";
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (!res.ok) throw new Error('Credenciales inválidas');
+    const data = await res.json();
+    localStorage.setItem('token', data.token);
+    msg.textContent = "Inicio de sesión exitoso ✅";
+    loginSection.style.display = 'none';
+    dashboard.style.display = 'block';
+  } catch (e) {
+    msg.textContent = "Error: " + e.message;
+  }
+});
+
+loadBtn.addEventListener('click', async () => {
+  const token = localStorage.getItem('token');
+  const roomsDiv = document.getElementById('rooms');
+  roomsDiv.innerHTML = "<p>Cargando habitaciones...</p>";
 
   try {
-    const res = await fetch('/api/rooms'); // ✅ siempre relativo
-    if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+    const res = await fetch('/api/rooms');
     const data = await res.json();
-
-    out.innerHTML = data.map(r => `
-      <div class="room-card">
-        <h3>${(r.Name || r.nombre || 'Habitación')}</h3>
-        <p><strong>Precio:</strong> $${Number(r.Price ?? r.precio ?? 0).toLocaleString('es-CO')}</p>
-      </div>
-    `).join('');
-  } catch (e) {
-    const mock = [
-      { Name: 'Habitación 101', Price: 680000 },
-      { Name: 'Habitación 202', Price: 550000 },
-      { Name: 'Habitación 303', Price: 750000 },
-      { Name: 'Habitación 404', Price: 600000 }
-    ];
-    out.innerHTML = mock.map(r => `
+    roomsDiv.innerHTML = data.map(r => `
       <div class="room-card">
         <h3>${r.Name}</h3>
-        <p><strong>Precio:</strong> $${Number(r.Price).toLocaleString('es-CO')}</p>
+        <p>💰 $${Number(r.Price).toLocaleString('es-CO')}</p>
       </div>
-    `).join('') + `<p style="color:#f87171;margin-top:8px">API no disponible: ${e.message}</p>`;
+    `).join('');
+  } catch {
+    roomsDiv.innerHTML = "<p style='color:red;'>No se pudieron cargar las habitaciones</p>";
   }
 });

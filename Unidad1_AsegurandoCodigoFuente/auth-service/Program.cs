@@ -1,36 +1,25 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// CORS (solo para pruebas locales)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:8080")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
 var app = builder.Build();
 
-app.UseCors("AllowLocalFrontend");
-
-app.MapGet("/health", () => Results.Ok(new { status = "auth ok" }));
-
-app.MapPost("/login", async (HttpContext ctx) =>
+app.MapPost("/api/auth/login", async (HttpContext context) =>
 {
-    var body = await System.Text.Json.JsonSerializer.DeserializeAsync<LoginRequest>(ctx.Request.Body);
-    if (body is not null && body.User == "test" && body.Password == "test")
+    var body = await JsonSerializer.DeserializeAsync<LoginRequest>(context.Request.Body);
+    if (body is not null && body.Username == "admin" && body.Password == "1234")
     {
-        return Results.Ok(new { token = "fake-jwt-token" });
+        await context.Response.WriteAsJsonAsync(new { token = "fake-jwt-token-12345", user = "admin" });
     }
-    return Results.Unauthorized();
+    else
+    {
+        context.Response.StatusCode = 401;
+        await context.Response.WriteAsJsonAsync(new { error = "Credenciales inválidas" });
+    }
 });
 
 app.Run();
 
-internal record LoginRequest(string User, string Password);
+record LoginRequest(string Username, string Password);
