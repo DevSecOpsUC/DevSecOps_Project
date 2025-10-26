@@ -1,0 +1,15 @@
+// Tráfico HTTP
+AppServiceHTTPLogs
+| where TimeGenerated > ago(2h)
+| summarize count() by StatusCode
+| order by StatusCode asc
+
+// Logs de consola
+AppServiceConsoleLogs
+| where TimeGenerated > ago(2h)
+| project TimeGenerated, Level, Message
+
+// Alertas de errores críticos
+AppServiceConsoleLogs
+| where Message contains "ERROR" or Message contains "Exception"
+| project TimeGenerated, Message, Level

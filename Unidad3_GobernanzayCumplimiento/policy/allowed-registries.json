@@ -1,0 +1,39 @@
+{
+  "properties": {
+    "displayName": "Solo permitir imágenes de contenedores desde registries aprobados",
+    "policyType": "Custom",
+    "mode": "All",
+    "description": "Esta política garantiza que los recursos de contenedores solo se implementen desde Docker Hub o ACR aprobados.",
+    "metadata": {
+      "category": "Container Security"
+    },
+    "parameters": {
+      "allowedRegistries": {
+        "type": "Array",
+        "metadata": {
+          "description": "Lista de registries aprobados",
+          "displayName": "Registries aprobados"
+        }
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Web/sites"
+          },
+          {
+            "not": {
+              "field": "Microsoft.Web/sites/siteConfig.linuxFxVersion",
+              "like": "[concat('*', parameters('allowedRegistries')[0], '*')]"
+            }
+          }
+        ]
+      },
+      "then": {
+        "effect": "deny"
+      }
+    }
+  }
+}
