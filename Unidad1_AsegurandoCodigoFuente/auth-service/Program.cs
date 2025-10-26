@@ -20,6 +20,7 @@ app.MapPost("/api/auth/login", async (HttpContext context) =>
     }
 });
 
+app.Urls.Add("http://0.0.0.0:80"); // 🔹 línea crucial
 app.Run();
 
 record LoginRequest(string Username, string Password);

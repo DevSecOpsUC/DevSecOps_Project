@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
-using System.Collections.Generic;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -18,4 +17,5 @@ app.MapGet("/api/rooms", () =>
     return Results.Json(rooms);
 });
 
+app.Urls.Add("http://0.0.0.0:80"); // 🔹 igual aquí
 app.Run();
