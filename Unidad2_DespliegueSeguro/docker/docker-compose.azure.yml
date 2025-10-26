@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: devsecopsuc/frontend-web:latest
+    image: devsecopsucac/frontend-web:v2
     ports:
       - "8080:8080"
     restart: always
@@ -11,9 +11,9 @@ services:
       - rooms
 
   auth:
-    image: devsecopsuc/auth-service:latest
+    image: devsecopsucac/auth-service:v2
     restart: always
 
   rooms:
-    image: devsecopsuc/rooms-service:latest
+    image: devsecopsucac/rooms-service:v2
     restart: always
