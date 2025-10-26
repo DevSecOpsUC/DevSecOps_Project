@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: devsecopsuc/frontend-web:v3
+    image: devsecopsuc/frontend-web:v4
     ports:
       - "8080:8080"
     restart: always

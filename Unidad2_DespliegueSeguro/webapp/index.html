@@ -2,27 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>DevSecOps UC - Dashboard</title>
+  <title>DevSecOps UC - Sistema de Habitaciones</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header>
     <h1>🏠 DevSecOps UC - Sistema de Habitaciones</h1>
-  </header>
-
-  <main id="main-content">
-    <section id="login-section">
-      <h2>Iniciar Sesión</h2>
+    <div id="login-container">
       <input type="text" id="username" placeholder="Usuario" />
       <input type="password" id="password" placeholder="Contraseña" />
       <button id="login-btn">Ingresar</button>
-      <p id="login-msg"></p>
-    </section>
+      <span id="login-msg"></span>
+    </div>
+  </header>
 
-    <section id="dashboard" style="display:none;">
+  <main>
+    <section id="dashboard">
       <h2>Habitaciones Disponibles</h2>
       <button id="load-btn">Cargar Habitaciones</button>
-      <div id="rooms"></div>
+      <div id="rooms" class="rooms-grid"></div>
     </section>
   </main>
 
