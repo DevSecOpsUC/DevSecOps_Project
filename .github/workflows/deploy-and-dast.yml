@@ -27,7 +27,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # --------------------------------------------------------------------
-      # Ensure Resource Group and ACR exist
+      # Ensure resource group and ACR exist
       # --------------------------------------------------------------------
       - name: 🧱 Ensure Resource Group and ACR exist
         run: |
@@ -50,9 +50,7 @@ jobs:
           context: .
           file: Unidad2_DespliegueSeguro/docker/Dockerfile.auth
           push: true
-          tags: |
-            ${{ env.ACR_NAME }}.azurecr.io/auth-service:${{ github.run_number }}
-            ${{ env.ACR_NAME }}.azurecr.io/auth-service:latest
+          tags: ${{ env.ACR_NAME }}.azurecr.io/auth-service:latest
 
       - name: 🧱 Build and push rooms-service
         uses: docker/build-push-action@v5
@@ -60,9 +58,7 @@ jobs:
           context: .
           file: Unidad2_DespliegueSeguro/docker/Dockerfile.rooms
           push: true
-          tags: |
-            ${{ env.ACR_NAME }}.azurecr.io/rooms-service:${{ github.run_number }}
-            ${{ env.ACR_NAME }}.azurecr.io/rooms-service:latest
+          tags: ${{ env.ACR_NAME }}.azurecr.io/rooms-service:latest
 
       # --------------------------------------------------------------------
       # Build & push frontend (Nginx)
@@ -73,21 +69,7 @@ jobs:
           context: .
           file: Unidad2_DespliegueSeguro/docker/Dockerfile.frontend
           push: true
-          tags: |
-            ${{ env.ACR_NAME }}.azurecr.io/frontend-web:${{ github.run_number }}
-            ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
-
-      # --------------------------------------------------------------------
-      # Update docker-compose with current build number
-      # --------------------------------------------------------------------
-      - name: 🔧 Update docker-compose with new tags
-        run: |
-          echo "Updating docker-compose with build number ${{ github.run_number }} ..."
-          sed -i "s/frontend-web:.*/frontend-web:${{ github.run_number }}/" Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
-          sed -i "s/auth-service:.*/auth-service:${{ github.run_number }}/" Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
-          sed -i "s/rooms-service:.*/rooms-service:${{ github.run_number }}/" Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
-          echo "✅ docker-compose updated:"
-          cat Unidad2_DespliegueSeguro/docker/docker-compose.azure.yml
+          tags: ${{ env.ACR_NAME }}.azurecr.io/frontend-web:latest
 
       # --------------------------------------------------------------------
       # Configure ACR credentials in the WebApp
