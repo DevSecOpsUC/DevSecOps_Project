@@ -12,12 +12,8 @@ services:
 
   auth:
     image: devsecopsuc/auth-service:v3
-    expose:
-      - "80"
     restart: always
 
   rooms:
     image: devsecopsuc/rooms-service:v3
-    expose:
-      - "80"
     restart: always
