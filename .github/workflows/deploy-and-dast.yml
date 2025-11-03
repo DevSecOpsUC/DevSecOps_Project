@@ -36,6 +36,11 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           
+      - name: 🧪 Test Key Vault access
+        run: |
+          echo "Probando acceso al Key Vault..."
+          az keyvault secret list --vault-name kv-devsecopsuc --query "[].name"
+
       - name: 🔐 Load secrets from Azure Key Vault
         id: get-secrets
         uses: azure/get-keyvault-secrets@v1
