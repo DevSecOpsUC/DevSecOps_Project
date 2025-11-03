@@ -13,13 +13,11 @@ env:
   AUTH_APP: auth-service-devsecopsuc
   ROOMS_APP: rooms-service-devsecopsuc
 
-  # Nuevos dominios reales (los usaremos para ZAP o pruebas manuales)
+  # Nuevos dominios reales (usados por ZAP o pruebas manuales)
   AUTH_URL: https://auth-service-devsecopsuc-f7asb3addcfpf6b7.eastus2-01.azurewebsites.net
   ROOMS_URL: https://rooms-service-devsecopsuc-cpehdmf5b7hrhydg.eastus2-01.azurewebsites.net
   FRONTEND_URL: https://frontend-web-devsecopsuc-gjaqc5bkaabpazeh.eastus2-01.azurewebsites.net
 
-  DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
-  DOCKER_PASS: ${{ secrets.DOCKERHUB_TOKEN }}
   IMAGE_TAG: latest
 
 jobs:
@@ -36,22 +34,15 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # === Carga de secretos desde Azure Key Vault usando CLI (versión estable) ===
-      - name: 🔐 Load secrets from Azure Key Vault (CLI version)
+      # === Solo carga los secretos necesarios (DockerHub) desde Key Vault ===
+      - name: 🔐 Load Docker secrets from Azure Key Vault (CLI)
         id: get-secrets
         run: |
-          echo "Fetching secrets from Key Vault (kv-devsecopsuc)..."
+          echo "Fetching Docker secrets from Key Vault (kv-devsecopsuc)..."
           DOCKER_USER=$(az keyvault secret show --name "DOCKERHUB-USER" --vault-name "kv-devsecopsuc" --query value -o tsv)
           DOCKER_PASS=$(az keyvault secret show --name "DOCKERHUB-TOKEN" --vault-name "kv-devsecopsuc" --query value -o tsv)
-          SONAR_TOKEN=$(az keyvault secret show --name "SONAR-TOKEN" --vault-name "kv-devsecopsuc" --query value -o tsv)
-          SONAR_PROJECT_KEY=$(az keyvault secret show --name "SONAR-PROJECT-KEY" --vault-name "kv-devsecopsuc" --query value -o tsv)
-          SONAR_ORGANIZATION=$(az keyvault secret show --name "SONAR-ORGANIZATION" --vault-name "kv-devsecopsuc" --query value -o tsv)
-
           echo "docker_user=$DOCKER_USER" >> $GITHUB_OUTPUT
           echo "docker_pass=$DOCKER_PASS" >> $GITHUB_OUTPUT
-          echo "sonar_token=$SONAR_TOKEN" >> $GITHUB_OUTPUT
-          echo "sonar_project_key=$SONAR_PROJECT_KEY" >> $GITHUB_OUTPUT
-          echo "sonar_organization=$SONAR_ORGANIZATION" >> $GITHUB_OUTPUT
 
       - name: 🧱 Login to Docker Hub
         uses: docker/login-action@v3
