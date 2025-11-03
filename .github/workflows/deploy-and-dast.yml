@@ -31,6 +31,19 @@ jobs:
       - name: 📦 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🔐 Load secrets from Azure Key Vault
+        uses: azure/secrets-store@v1
+        with:
+          keyvault: kv-devsecopsuc
+          secrets: |
+            AZURE-CREDENTIALS
+            DOCKERHUB-USER
+            DOCKERHUB-TOKEN
+            SONAR-TOKEN
+            SONAR-PROJECT-KEY
+            SONAR-ORGANIZATION
+
+
       - name: 🧱 Login to Docker Hub
         uses: docker/login-action@v3
         with:
