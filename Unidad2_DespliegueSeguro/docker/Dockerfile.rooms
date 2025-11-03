@@ -1,19 +1,22 @@
-# Imagen base de .NET
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 80
-
-# Etapa de compilación
+# Etapa 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-# Rutas desde la raíz del repo (build context = ../..)
-COPY Unidad1_AsegurandoCodigoFuente/rooms-service/*.csproj .
-RUN dotnet restore
-COPY Unidad1_AsegurandoCodigoFuente/rooms-service/ .
+
+# Copiar y restaurar dependencias
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/rooms-service.csproj ./
+RUN dotnet restore rooms-service.csproj
+
+# Copiar el código fuente y publicar
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/ ./
 RUN dotnet publish -c Release -o /app/publish
 
-# Imagen final
-FROM base AS final
+# Etapa 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
+
+# 🔹 Asegurar que el servicio escuche en puerto 80
+ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
+
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "rooms-service.dll"]

@@ -1,28 +1,24 @@
-# Build stage
+# Etapa 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copia sólo los archivos de proyecto primero (mejor cache)
-COPY *.csproj ./
-# Si tu .csproj está en un subdirectorio o tiene otro nombre, se ajusta abajo.
-RUN dotnet restore
+# 🔹 Copiar solo el archivo .csproj del servicio
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/rooms-service.csproj ./rooms-service.csproj
+RUN dotnet restore rooms-service.csproj
 
-# Copia todo el código y publica
-COPY . .
-# publica la(s) dll(s) en /app/publish
+# 🔹 Copiar el resto del código fuente
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/ ./
 RUN dotnet publish -c Release -o /app/publish
 
-# Runtime stage
+# Etapa 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
+
+# 🔹 Variable para exponer el puerto
 ENV ASPNETCORE_URLS=http://+:80
 
-# Copia los artefactos publicados
-COPY --from=build /app/publish ./
+# 🔹 Copiar desde la etapa de build
+COPY --from=build /app/publish .
 
-# Listar archivos para depuración (opcional - elimina en prod)
-# RUN ls -la /app
-
-# Intenta ejecutar el primer *.dll que encuentre (establecer el nombre si lo conoces)
-# Si conoces el nombre final, reemplaza `rooms-service.dll` por el nombre real.
+# 🔹 Ejecutar el servicio
 ENTRYPOINT ["dotnet", "rooms-service.dll"]

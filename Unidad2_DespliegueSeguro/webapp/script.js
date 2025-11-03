@@ -8,23 +8,34 @@ document.addEventListener("DOMContentLoaded", () => {
   const userLabel = document.getElementById("user-label");
   const roomsDiv = document.getElementById("rooms");
 
-  // Si ya hay sesión, entra directo
-  if (localStorage.getItem("token")) {
-    showRoomsPage();
-  }
+  // 🔹 Detectar si está en Azure
+  const isAzure = location.hostname.includes("azurewebsites.net");
 
+  // 🔹 Usar URLs absolutas cuando esté desplegado en Azure
+  const AUTH_BASE = isAzure
+    ? "https://auth-service-devsecopsuc-f7asb3addcfpf6b7.eastus2-01.azurewebsites.net/api/auth"
+    : "/api/auth";
+
+  const ROOMS_BASE = isAzure
+    ? "https://rooms-service-devsecopsuc-cpehdmf5b7hrhydg.eastus2-01.azurewebsites.net/api/rooms"
+    : "/api/rooms";
+
+  if (localStorage.getItem("token")) showRoomsPage();
+
+  // --- LOGIN ---
   loginBtn.addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     loginMsg.textContent = "Verificando...";
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${AUTH_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ Username: username, Password: password })
       });
       if (!res.ok) throw new Error("Credenciales inválidas");
+
       const data = await res.json();
       localStorage.setItem("token", data.token);
       userLabel.textContent = `👤 ${data.user}`;
@@ -34,21 +45,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // --- LOGOUT ---
   logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("token");
     showLoginPage();
   });
 
+  // --- CARGAR HABITACIONES ---
   loadBtn.addEventListener("click", async () => {
     roomsDiv.innerHTML = "<p>Cargando habitaciones...</p>";
+
     try {
-      const res = await fetch("/api/rooms");
+      const res = await fetch(`${ROOMS_BASE}`);
       if (!res.ok) throw new Error("Error al obtener habitaciones");
+
       const data = await res.json();
       roomsDiv.innerHTML = data.map(r => `
         <div class="room-card">
-          <h3>${r.Name}</h3>
-          <p>💰 $${Number(r.Price).toLocaleString('es-CO')}</p>
+          <img src="${r.image}" alt="${r.name}" class="room-img" />
+          <h3>${r.name}</h3>
+          <p>💰 $${Number(r.price).toLocaleString('es-CO')}</p>
         </div>
       `).join("");
     } catch {
@@ -59,14 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function showRoomsPage() {
     loginPage.classList.add("hidden");
     roomsPage.classList.remove("hidden");
-    loginPage.classList.remove("active");
-    roomsPage.classList.add("active");
   }
 
   function showLoginPage() {
     loginPage.classList.remove("hidden");
     roomsPage.classList.add("hidden");
-    roomsPage.classList.remove("active");
-    loginPage.classList.add("active");
   }
 });

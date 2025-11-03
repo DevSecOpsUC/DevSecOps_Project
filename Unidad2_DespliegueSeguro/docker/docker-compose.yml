@@ -1,19 +1,17 @@
-version: '3.8'
-
 services:
-  frontend:
-    image: devsecopsuc/frontend-web:v17
-    ports:
-      - "8080:8080"
-    restart: always
-    depends_on:
-      - auth
-      - rooms
-
   auth:
-    image: devsecopsuc/auth-service:v3
+    image: devsecopsuc2025/auth-service:v1
     restart: always
 
   rooms:
-    image: devsecopsuc/rooms-service:v3
+    image: devsecopsuc2025/rooms-service:v1
+    restart: always
+
+  frontend:
+    image: devsecopsuc2025/frontend-web:v1
+    ports:
+      - "8080:80"
+    depends_on:
+      - auth
+      - rooms
     restart: always
