@@ -1,41 +1,64 @@
-name: "CodeQL - Unidad 1"
+name: "CodeQL - Full Repository Scan"
 
 on:
   push:
     branches: [ main ]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
+  schedule:
+    - cron: '0 3 * * 1' # Corre todos los lunes a las 3 AM
 
 jobs:
   analyze:
-    name: Analyze Source Code (Unidad 1)
+    name: CodeQL Security Analysis
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    steps:
-      - uses: actions/checkout@v4
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'csharp', 'javascript' ]
 
-      - name: Set up .NET
+    steps:
+      # --- 1️⃣ Checkout del repositorio completo ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- 2️⃣ Instalar .NET (para proyectos backend) ---
+      - name: Set up .NET 8
+        if: matrix.language == 'csharp'
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore & Build
+      # --- 3️⃣ Restaurar y compilar backend ---
+      - name: Restore & Build backend
+        if: matrix.language == 'csharp'
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
+          echo "Restaurando proyectos .NET..."
           dotnet restore
           dotnet build --configuration Release
 
+      # --- 4️⃣ Inicializar CodeQL para cada lenguaje ---
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: csharp
+          languages: ${{ matrix.language }}
+          config: |
+            queries:
+              - security-extended
+              - security-and-quality
 
-      - name: Autobuild CodeQL
+      # --- 5️⃣ Autobuild (para C# y JS) ---
+      - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL Analysis
+      # --- 6️⃣ Análisis CodeQL ---
+      - name: Analyze with CodeQL
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
