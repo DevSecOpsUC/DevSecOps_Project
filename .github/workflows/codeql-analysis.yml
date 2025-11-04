@@ -1,4 +1,4 @@
-name: "CodeQL - Full Repository Scan"
+name: "CodeQL - Unidades 1 y 2"
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
   schedule:
-    - cron: '0 3 * * 1' # Corre todos los lunes a las 3 AM
+    - cron: '0 3 * * 1'
 
 jobs:
   analyze:
@@ -23,41 +23,31 @@ jobs:
         language: [ 'csharp', 'javascript' ]
 
     steps:
-      # --- 1️⃣ Checkout del repositorio completo ---
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- 2️⃣ Instalar .NET (para proyectos backend) ---
       - name: Set up .NET 8
         if: matrix.language == 'csharp'
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      # --- 3️⃣ Restaurar y compilar backend ---
       - name: Restore & Build backend
         if: matrix.language == 'csharp'
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
-          echo "Restaurando proyectos .NET..."
           dotnet restore
           dotnet build --configuration Release
 
-      # --- 4️⃣ Inicializar CodeQL para cada lenguaje ---
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          config: |
-            queries:
-              - security-extended
-              - security-and-quality
+          config-file: ./.github/codeql-config.yml
 
-      # --- 5️⃣ Autobuild (para C# y JS) ---
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
-      # --- 6️⃣ Análisis CodeQL ---
       - name: Analyze with CodeQL
         uses: github/codeql-action/analyze@v3
         with:

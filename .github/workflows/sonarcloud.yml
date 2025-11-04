@@ -1,4 +1,4 @@
-name: "SonarCloud - Full Repository (.NET + JS)"
+name: "SonarCloud - Unidades 1 y 2 (.NET + JS)"
 
 on:
   push:
@@ -6,30 +6,27 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
   schedule:
-    - cron: '0 2 * * 1' # Corre todos los lunes a las 2 AM
+    - cron: '0 2 * * 1'
 
 jobs:
   sonar-analyze:
     runs-on: ubuntu-latest
     name: SonarCloud Full Analysis
+
     steps:
-      # --- 1️⃣ Checkout ---
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --- 2️⃣ Login Azure (para recuperar secretos) ---
       - name: 🔑 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Obtener secretos de SonarCloud ---
       - name: 🔐 Load SonarCloud secrets from Azure Key Vault
         id: get-sonar
         run: |
-          echo "Fetching SonarCloud secrets from Key Vault..."
           TOKEN=$(az keyvault secret show --name "SONAR-TOKEN" --vault-name "kv-devsecopsuc" --query value -o tsv)
           PROJECT_KEY=$(az keyvault secret show --name "SONAR-PROJECT-KEY" --vault-name "kv-devsecopsuc" --query value -o tsv)
           ORGANIZATION=$(az keyvault secret show --name "SONAR-ORGANIZATION" --vault-name "kv-devsecopsuc" --query value -o tsv)
@@ -37,7 +34,6 @@ jobs:
           echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
           echo "organization=$ORGANIZATION" >> $GITHUB_OUTPUT
 
-      # --- 4️⃣ Configurar entornos ---
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -49,7 +45,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # --- 5️⃣ Instalar y cachear el Sonar Scanner ---
       - name: Cache Sonar Scanner
         id: cache-sonar
         uses: actions/cache@v4
@@ -64,21 +59,6 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/scanner"
           dotnet tool install dotnet-sonarscanner --version 5.* --tool-path "${RUNNER_TEMP}/scanner"
 
-      # --- 6️⃣ Verificar secretos ---
-      - name: 🧪 Verify SonarCloud secrets loaded
-        run: |
-          if [ -z "${{ steps.get-sonar.outputs.project_key }}" ]; then
-            echo "❌ SONAR_PROJECT_KEY vacío"; exit 1;
-          fi
-          if [ -z "${{ steps.get-sonar.outputs.organization }}" ]; then
-            echo "❌ SONAR_ORGANIZATION vacío"; exit 1;
-          fi
-          if [ -z "${{ steps.get-sonar.outputs.token }}" ]; then
-            echo "❌ SONAR_TOKEN vacío"; exit 1;
-          fi
-          echo "✅ SonarCloud secrets cargados correctamente."
-
-      # --- 7️⃣ Iniciar análisis SonarCloud (raíz del repo) ---
       - name: Begin SonarCloud analysis
         env:
           SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
@@ -92,22 +72,18 @@ jobs:
             /d:sonar.login="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.projectBaseDir="." \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/docker/**" \
-            /d:sonar.sources="." \
+            /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
+            /d:sonar.exclusions="Unidad3_GobernanzayCumplimiento/**,**/bin/**,**/obj/**,**/node_modules/**" \
             /d:sonar.language="cs,js" \
             /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/*.xml"
 
-      # --- 8️⃣ Restaurar y compilar todos los proyectos .NET ---
       - name: Restore & Build all .NET projects
         run: |
-          echo "Buscando archivos .sln..."
-          for file in $(find . -name "*.sln"); do
-            echo "Restaurando y compilando $file"
-            dotnet restore "$file"
-            dotnet build "$file" --configuration Release
+          for sln in $(find Unidad1_AsegurandoCodigoFuente -name "*.sln"); do
+            dotnet restore "$sln"
+            dotnet build "$sln" --configuration Release
           done
 
-      # --- 9️⃣ Finalizar análisis ---
       - name: End SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
