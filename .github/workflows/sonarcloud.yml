@@ -67,8 +67,8 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
-            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.cobertura.xml" \
-            /d:sonar.coverageReportPaths="TestResults/**/coverage.cobertura.xml"
+            /d:sonar.cs.opencover.reportsPaths="auth-service.Tests/TestResults/**/coverage.cobertura.xml,rooms-service.Tests/TestResults/**/coverage.cobertura.xml" \
+            /d:sonar.coverageReportPaths="auth-service.Tests/TestResults/**/coverage.cobertura.xml,rooms-service.Tests/TestResults/**/coverage.cobertura.xml"
 
       # --- 7️⃣ Compilar solución principal ---
       - name: Build solution
@@ -79,18 +79,17 @@ jobs:
       # --- 8️⃣ Ejecutar pruebas unitarias con cobertura ---
       - name: Run Unit Tests with Coverage
         run: |
-          echo "Ejecutando pruebas unitarias y generando reportes Cobertura..."
-          mkdir -p TestResults
+          echo "🧪 Ejecutando pruebas unitarias y generando reportes Cobertura..."
           for testproj in $(find Unidad1_AsegurandoCodigoFuente -name "*.Tests.csproj"); do
-            echo "🧪 Ejecutando: $testproj"
+            echo "Ejecutando: $testproj"
             dotnet test "$testproj" --configuration Release --no-build \
               /p:CollectCoverage=true \
               /p:CoverletOutputFormat=cobertura \
-              /p:CoverletOutput=../../TestResults/$(basename $testproj).coverage.cobertura.xml
+              /p:CoverletOutput=TestResults/coverage.cobertura.xml
           done
 
-          echo "✅ Archivos generados:"
-          find TestResults -name "*.cobertura.xml"
+          echo "✅ Archivos generados en el pipeline:"
+          find Unidad1_AsegurandoCodigoFuente -name "coverage.cobertura.xml"
 
       # --- 9️⃣ Finalizar análisis SonarCloud ---
       - name: End SonarCloud analysis
