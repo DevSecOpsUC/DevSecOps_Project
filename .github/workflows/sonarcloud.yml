@@ -5,6 +5,8 @@ on:
     branches: [ main ]
   pull_request:
     types: [ opened, synchronize, reopened ]
+  schedule:
+    - cron: '0 2 * * 1' # Corre todos los lunes a las 2 AM
 
 jobs:
   sonarcloud:
@@ -36,15 +38,24 @@ jobs:
           echo "org=$ORG" >> $GITHUB_OUTPUT
 
       # --- 4️⃣ Preparar entornos ---
-      - name: Set up environments
-        uses: actions/setup-dotnet@v3
+      - name: Set up .NET 8 and Java 17
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+        shell: bash
+      - uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
 
-      - name: Install SonarScanner
+      # --- 5️⃣ Instalar SonarScanner ---
+      - name: Install dotnet-sonarscanner
         run: dotnet tool install --global dotnet-sonarscanner --version 5.*
 
-      # --- 5️⃣ Iniciar análisis SonarCloud ---
+      # --- 6️⃣ Iniciar análisis SonarCloud ---
       - name: Begin SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
@@ -58,35 +69,47 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
-            /d:sonar.cs.opencover.reportsPaths="coverage-*.xml" \
-            /d:sonar.coverageReportPaths="coverage-*.xml"
+            /d:sonar.cs.opencover.reportsPaths="coverage-merged.xml"
 
-      # --- 6️⃣ Compilar solución ---
+      # --- 7️⃣ Compilar solución ---
       - name: Build solution
         run: |
           dotnet restore Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln
           dotnet build Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 7️⃣ Ejecutar tests con cobertura ---
+      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura ---
       - name: Run Unit Tests with Coverage
         run: |
-          echo "🧪 Ejecutando pruebas..."
+          echo "🧪 Ejecutando pruebas unitarias..."
           dotnet test Unidad1_AsegurandoCodigoFuente/auth-service.Tests/auth-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=cobertura \
-            /p:CoverletOutput=coverage-auth.xml
+            /p:CoverletOutputFormat=cobertura
 
           dotnet test Unidad1_AsegurandoCodigoFuente/rooms-service.Tests/rooms-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=cobertura \
-            /p:CoverletOutput=coverage-rooms.xml
+            /p:CoverletOutputFormat=cobertura
 
-          echo "✅ Archivos generados:"
-          ls -l coverage-*.xml || echo "❌ No se encontraron reportes"
+          echo "📁 Buscando archivos de cobertura..."
+          find Unidad1_AsegurandoCodigoFuente -name "coverage.cobertura.xml" || true
 
-      # --- 8️⃣ Finalizar análisis ---
+      # --- 9️⃣ Fusionar reportes Cobertura en un único XML ---
+      - name: Merge Coverage Reports
+        run: |
+          echo "🔧 Fusionando reportes Cobertura..."
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          export PATH="$PATH:/home/runner/.dotnet/tools"
+          reportgenerator \
+            -reports:"Unidad1_AsegurandoCodigoFuente/**/coverage.cobertura.xml" \
+            -targetdir:"coveragereport" \
+            -reporttypes:Cobertura
+          
+          cp coveragereport/Cobertura.xml coverage-merged.xml
+          echo "✅ Archivo combinado creado:"
+          ls -l coverage-merged.xml
+
+      # --- 🔟 Finalizar análisis SonarCloud ---
       - name: End SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
