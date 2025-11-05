@@ -14,19 +14,19 @@ jobs:
     name: SonarCloud Analysis (.NET + JS)
 
     steps:
-      # --- 1️⃣ Checkout ---
+      # --- 1️⃣ Checkout del código ---
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --- 2️⃣ Login Azure (para Key Vault) ---
+      # --- 2️⃣ Login Azure (para obtener secretos desde Key Vault) ---
       - name: 🔑 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Obtener secretos de SonarCloud ---
+      # --- 3️⃣ Cargar secretos de SonarCloud ---
       - name: 🔐 Load SonarCloud secrets from Azure Key Vault
         id: get-sonar
         run: |
@@ -51,8 +51,7 @@ jobs:
 
       # --- 5️⃣ Instalar SonarScanner ---
       - name: Install dotnet-sonarscanner
-        run: |
-          dotnet tool install --global dotnet-sonarscanner --version 5.*
+        run: dotnet tool install --global dotnet-sonarscanner --version 5.*
 
       # --- 6️⃣ Iniciar análisis SonarCloud ---
       - name: Begin SonarCloud analysis
@@ -68,30 +67,33 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
-            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.cobertura.xml" \
-            /d:sonar.coverageReportPaths="**/TestResults/**/coverage.cobertura.xml"
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.cobertura.xml" \
+            /d:sonar.coverageReportPaths="TestResults/**/coverage.cobertura.xml"
 
-
-      # --- 7️⃣ Compilar proyectos .NET ---
+      # --- 7️⃣ Compilar solución principal ---
       - name: Build solution
         run: |
           dotnet restore Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln
           dotnet build Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura (formato Cobertura) ---
+      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura ---
       - name: Run Unit Tests with Coverage
         run: |
-          echo "Ejecutando pruebas unitarias y recolectando cobertura..."
+          echo "Ejecutando pruebas unitarias y generando reportes Cobertura..."
+          mkdir -p TestResults
           for testproj in $(find Unidad1_AsegurandoCodigoFuente -name "*.Tests.csproj"); do
+            echo "🧪 Ejecutando: $testproj"
             dotnet test "$testproj" --configuration Release --no-build \
               /p:CollectCoverage=true \
               /p:CoverletOutputFormat=cobertura \
-              /p:CoverletOutput=./TestResults/coverage.cobertura.xml
+              /p:CoverletOutput=../../TestResults/$(basename $testproj).coverage.cobertura.xml
           done
+
+          echo "✅ Archivos generados:"
+          find TestResults -name "*.cobertura.xml"
 
       # --- 9️⃣ Finalizar análisis SonarCloud ---
       - name: End SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
-        run: |
-          dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
