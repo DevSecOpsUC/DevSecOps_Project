@@ -1,3 +1,4 @@
+using Common; // <-- Importa la librería compartida
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,10 +8,14 @@ namespace AuthService;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // 🔹 Configurar servicios comunes (Swagger, etc.)
+        builder.Services.AddCommonServices();
+
+        // 🔹 Configurar CORS para permitir tu frontend en Azure
         builder.Services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
@@ -20,8 +25,12 @@ public class Program
         });
 
         var app = builder.Build();
+
+        // 🔹 Pipeline común (HSTS, HTTPS, Swagger, etc.)
+        app.UseCommonPipeline();
         app.UseCors();
 
+        // 🔹 Endpoint de autenticación
         app.MapPost("/api/auth/login", async (HttpContext context) =>
         {
             var body = await context.Request.ReadFromJsonAsync<LoginRequest>();
@@ -47,9 +56,13 @@ public class Program
             }
         });
 
+        // 🔹 Endpoint de prueba (para cobertura de test)
+        app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
         app.Urls.Add("https://0.0.0.0:80");
-        app.Run();
+
+        await app.RunAsync();
     }
 
-    private record LoginRequest(string Username, string Password);
+    private sealed record LoginRequest(string Username, string Password);
 }
