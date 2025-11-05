@@ -6,7 +6,7 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
   schedule:
-    - cron: '0 2 * * 1'
+    - cron: '0 2 * * 1' # Corre todos los lunes a las 2 AM
 
 jobs:
   sonarcloud:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       # --- 1️⃣ Checkout ---
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -64,7 +64,7 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/scanner"
           dotnet tool install dotnet-sonarscanner --version 5.* --tool-path "${RUNNER_TEMP}/scanner"
 
-      # --- 6️⃣ Iniciar análisis SonarCloud (unificado) ---
+      # --- 6️⃣ Iniciar análisis SonarCloud ---
       - name: Begin SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
@@ -80,7 +80,7 @@ jobs:
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
             /d:sonar.inclusions="**/*.cs,**/*.js,**/*.html,**/*.css" \
             /d:sonar.exclusions="Unidad3_GobernanzayCumplimiento/**,**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
-            /d:sonar.scanAll=false
+            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.cobertura.xml"
 
       # --- 7️⃣ Compilar proyectos .NET ---
       - name: Restore & Build .NET projects
@@ -91,7 +91,17 @@ jobs:
             dotnet build "$sln" --configuration Release
           done
 
-      # --- 8️⃣ Finalizar análisis ---
+      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura ---
+      - name: Run Unit Tests with Coverage
+        run: |
+          echo "Ejecutando pruebas unitarias y recolectando cobertura..."
+          for testproj in $(find Unidad1_AsegurandoCodigoFuente -name "*.Tests.csproj"); do
+            dotnet test "$testproj" --configuration Release --no-build \
+              --collect:"XPlat Code Coverage" \
+              --results-directory ./TestResults
+          done
+
+      # --- 9️⃣ Finalizar análisis SonarCloud ---
       - name: End SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
