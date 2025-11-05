@@ -50,7 +50,7 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner --version 5.*
           echo "PATH=$PATH:/home/runner/.dotnet/tools" >> $GITHUB_ENV
 
-      # --- 6️⃣ Begin analysis (solo módulos) ---
+      # --- 6️⃣ Begin analysis ---
       - name: ☁️ Begin SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
         env:
@@ -61,14 +61,13 @@ jobs:
           dotnet sonarscanner begin \
             /k:"$SONAR_PROJECT_KEY" \
             /o:"$SONAR_ORGANIZATION" \
-            /d:sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.scm.provider=git \
             /d:sonar.modules="auth-service,rooms-service" \
-            /d:auth-service.sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente/auth-service" \
+            /d:auth-service.sonar.projectBaseDir="auth-service" \
             /d:auth-service.sonar.sources="." \
-            /d:rooms-service.sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente/rooms-service" \
+            /d:rooms-service.sonar.projectBaseDir="rooms-service" \
             /d:rooms-service.sonar.sources="." \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
@@ -81,7 +80,7 @@ jobs:
           dotnet restore AsegurandoCodigo.sln
           dotnet build AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Test con cobertura ---
+      # --- 8️⃣ Tests con cobertura ---
       - name: 🧪 Run Unit Tests with Coverage
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
@@ -97,7 +96,7 @@ jobs:
             /p:CoverletOutputFormat=cobertura \
             /p:CoverletOutput=TestResults/
 
-          echo "📁 Archivos de cobertura encontrados:"
+          echo "📁 Archivos de cobertura generados:"
           find . -name "coverage.cobertura.xml"
 
       # --- 9️⃣ End analysis ---
