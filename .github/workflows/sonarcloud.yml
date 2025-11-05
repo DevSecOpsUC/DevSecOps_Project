@@ -94,20 +94,21 @@ jobs:
           echo "📁 Buscando archivos de cobertura..."
           find Unidad1_AsegurandoCodigoFuente -name "coverage.cobertura.xml" || true
 
-      # --- 9️⃣ Fusionar reportes Cobertura en un único XML ---
-      - name: Merge Coverage Reports
+      # --- 9️⃣ Fusionar reportes Cobertura en un único XML (OpenCover) ---
+      - name: Merge Coverage Reports (OpenCover format)
         run: |
-          echo "🔧 Fusionando reportes Cobertura..."
+          echo "🔧 Fusionando reportes de cobertura en formato OpenCover..."
           dotnet tool install -g dotnet-reportgenerator-globaltool
           export PATH="$PATH:/home/runner/.dotnet/tools"
           reportgenerator \
             -reports:"Unidad1_AsegurandoCodigoFuente/**/coverage.cobertura.xml" \
             -targetdir:"coveragereport" \
-            -reporttypes:Cobertura
+            -reporttypes:OpenCover
           
-          cp coveragereport/Cobertura.xml coverage-merged.xml
+          cp coveragereport/OpenCover.xml coverage-merged.xml
           echo "✅ Archivo combinado creado:"
           ls -l coverage-merged.xml
+          head -n 10 coverage-merged.xml
 
       # --- 🔟 Finalizar análisis SonarCloud ---
       - name: End SonarCloud analysis
