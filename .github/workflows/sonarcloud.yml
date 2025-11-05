@@ -12,22 +12,21 @@ jobs:
     name: SonarCloud Analysis (.NET 8 + KeyVault)
 
     steps:
-      # --- 1️⃣ Checkout con historial completo (evita error SCM) ---
+      # --- 1️⃣ Checkout completo ---
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --- 2️⃣ Login en Azure ---
+      # --- 2️⃣ Azure Login ---
       - name: 🔑 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Cargar secretos desde Key Vault ---
+      # --- 3️⃣ Obtener secretos del Key Vault ---
       - name: 🔐 Load SonarCloud secrets
         id: get-sonar
         run: |
-          echo "🔎 Obteniendo secretos desde Azure Key Vault..."
           TOKEN=$(az keyvault secret show --name "SONAR-TOKEN" --vault-name "kv-devsecopsuc" --query value -o tsv)
           PROJECT_KEY=$(az keyvault secret show --name "SONAR-PROJECT-KEY" --vault-name "kv-devsecopsuc" --query value -o tsv)
           ORG=$(az keyvault secret show --name "SONAR-ORGANIZATION" --vault-name "kv-devsecopsuc" --query value -o tsv)
@@ -35,80 +34,74 @@ jobs:
           echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
           echo "org=$ORG" >> $GITHUB_OUTPUT
 
-      # --- 4️⃣ Instalar SDKs requeridos ---
-      - name: ⚙️ Setup .NET 8 y Java
+      # --- 4️⃣ Preparar entorno ---
+      - name: ⚙️ Setup .NET y Java
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: 17
-
-      - name: 🧩 Instalar herramientas adicionales
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y jq
+      - name: 🧩 Install utilities
+        run: sudo apt-get update -y && sudo apt-get install -y jq
 
       # --- 5️⃣ Instalar SonarScanner ---
-      - name: 🧰 Install dotnet-sonarscanner
+      - name: 🧰 Install SonarScanner
         run: |
           dotnet tool install --global dotnet-sonarscanner --version 5.*
-          export PATH="$PATH:/home/runner/.dotnet/tools"
+          echo "PATH=$PATH:/home/runner/.dotnet/tools" >> $GITHUB_ENV
 
       # --- 6️⃣ Iniciar análisis SonarCloud ---
       - name: ☁️ Begin SonarCloud analysis
-        working-directory: Unidad1_AsegurandoCodigoFuente
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
           SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
           SONAR_ORGANIZATION: ${{ steps.get-sonar.outputs.org }}
         run: |
-          echo "🚀 Iniciando análisis SonarCloud..."
+          echo "🚀 Starting SonarCloud analysis..."
           dotnet sonarscanner begin \
             /k:"$SONAR_PROJECT_KEY" \
             /o:"$SONAR_ORGANIZATION" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.projectBaseDir="." \
-            /d:sonar.sources="." \
-            /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml" \
+            /d:sonar.sources="Unidad1_AsegurandoCodigoFuente" \
+            /d:sonar.cs.opencover.reportsPaths="Unidad1_AsegurandoCodigoFuente/**/coverage.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
             /d:sonar.scm.provider=git
 
-      # --- 7️⃣ Compilar solución ---
-      - name: 🏗️ Build solution
+      # --- 7️⃣ Compilar la solución ---
+      - name: 🏗️ Build .NET solution
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
           dotnet restore AsegurandoCodigo.sln
           dotnet build AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura ---
+      # --- 8️⃣ Ejecutar pruebas con cobertura ---
       - name: 🧪 Run Unit Tests with Coverage
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
-          echo "🧪 Ejecutando pruebas con cobertura..."
+          echo "🧪 Ejecutando pruebas..."
           dotnet test auth-service.Tests/auth-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
-            /p:CoverletOutput=TestResults/ \
-            /p:CoverletOutputFormat=cobertura
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=TestResults/
 
           dotnet test rooms-service.Tests/rooms-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
-            /p:CoverletOutput=TestResults/ \
-            /p:CoverletOutputFormat=cobertura
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=TestResults/
 
-          echo "📁 Archivos de cobertura generados:"
-          find . -name "coverage.cobertura.xml"
+          echo "📄 Reportes generados:"
+          find . -name "coverage.cobertura.xml" || true
 
-
-      # --- 9️⃣ Finalizar análisis SonarCloud ---
+      # --- 9️⃣ Finalizar análisis ---
       - name: 🧾 End SonarCloud analysis
-        working-directory: Unidad1_AsegurandoCodigoFuente
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
-        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+        run: |
+          echo "✅ Finalizando análisis SonarCloud..."
+          dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
