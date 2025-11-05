@@ -6,7 +6,7 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
   schedule:
-    - cron: '0 2 * * 1' # Lunes a las 2 AM
+    - cron: '0 2 * * 1'
 
 jobs:
   sonarcloud:
@@ -14,26 +14,30 @@ jobs:
     name: SonarCloud Analysis (.NET + JS)
 
     steps:
-      # --- 1️⃣ Clonar repositorio ---
+      # --- 1️⃣ Checkout ---
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --- 2️⃣ Login en Azure (para secretos) ---
+      # --- 2️⃣ Login Azure (para Key Vault) ---
       - name: 🔑 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Obtener secretos de SonarCloud desde Key Vault ---
+      # --- 3️⃣ Obtener secretos de SonarCloud ---
       - name: 🔐 Load SonarCloud secrets from Azure Key Vault
         id: get-sonar
         run: |
           TOKEN=$(az keyvault secret show --name "SONAR-TOKEN" --vault-name "kv-devsecopsuc" --query value -o tsv)
+          PROJECT_KEY=$(az keyvault secret show --name "SONAR-PROJECT-KEY" --vault-name "kv-devsecopsuc" --query value -o tsv)
+          ORGANIZATION=$(az keyvault secret show --name "SONAR-ORGANIZATION" --vault-name "kv-devsecopsuc" --query value -o tsv)
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
+          echo "organization=$ORGANIZATION" >> $GITHUB_OUTPUT
 
-      # --- 4️⃣ Preparar entornos ---
+      # --- 4️⃣ Configurar entornos ---
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -60,15 +64,25 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/scanner"
           dotnet tool install dotnet-sonarscanner --version 5.* --tool-path "${RUNNER_TEMP}/scanner"
 
-      # --- 6️⃣ Iniciar análisis (usando .sonarcloud.properties) ---
+      # --- 6️⃣ Iniciar análisis SonarCloud (unificado) ---
       - name: Begin SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
+          SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
+          SONAR_ORGANIZATION: ${{ steps.get-sonar.outputs.organization }}
         run: |
           SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          "$SCANNER" begin /d:sonar.token="$SONAR_TOKEN"
+          "$SCANNER" begin \
+            /k:"$SONAR_PROJECT_KEY" \
+            /o:"$SONAR_ORGANIZATION" \
+            /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
+            /d:sonar.inclusions="**/*.cs,**/*.js,**/*.html,**/*.css" \
+            /d:sonar.exclusions="Unidad3_GobernanzayCumplimiento/**,**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
+            /d:sonar.scanAll=false
 
-      # --- 7️⃣ Compilar todos los proyectos .NET ---
+      # --- 7️⃣ Compilar proyectos .NET ---
       - name: Restore & Build .NET projects
         run: |
           echo "Compilando proyectos .NET..."
