@@ -59,6 +59,7 @@ jobs:
 
       # --- 6️⃣ Iniciar análisis SonarCloud ---
       - name: ☁️ Begin SonarCloud analysis
+        working-directory: Unidad1_AsegurandoCodigoFuente
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
           SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
@@ -70,8 +71,8 @@ jobs:
             /o:"$SONAR_ORGANIZATION" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente" \
-            /d:sonar.sources="Unidad1_AsegurandoCodigoFuente" \
+            /d:sonar.projectBaseDir="." \
+            /d:sonar.sources="." \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
@@ -104,8 +105,10 @@ jobs:
           echo "📁 Archivos de cobertura generados:"
           find . -name "coverage.cobertura.xml"
 
+
       # --- 9️⃣ Finalizar análisis SonarCloud ---
       - name: 🧾 End SonarCloud analysis
+        working-directory: Unidad1_AsegurandoCodigoFuente
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
