@@ -6,7 +6,7 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
   schedule:
-    - cron: '0 2 * * 1' # Escaneo semanal
+    - cron: '0 2 * * 1'
 
 jobs:
   sonar-analyze:
@@ -83,8 +83,7 @@ jobs:
             /d:sonar.inclusions="**/*.cs,**/*.js,**/*.html,**/*.css" \
             /d:sonar.exclusions="Unidad3_GobernanzayCumplimiento/**,**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
             /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/*.xml" \
-            /d:sonar.scanAll=false \
-            /d:sonar.modules=
+            /d:sonar.scanAll=false
 
       # --- 7️⃣ Restaurar y compilar proyectos .NET ---
       - name: Restore & Build .NET projects
