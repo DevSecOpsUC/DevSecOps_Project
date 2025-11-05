@@ -69,7 +69,7 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
-            /d:sonar.cs.opencover.reportsPaths="coverage-merged.xml"
+            /d:sonar.coverageReportPaths="coverage-merged.xml"
 
       # --- 7️⃣ Compilar solución ---
       - name: Build solution
@@ -94,18 +94,18 @@ jobs:
           echo "📁 Buscando archivos de cobertura..."
           find Unidad1_AsegurandoCodigoFuente -name "coverage.cobertura.xml" || true
 
-      # --- 9️⃣ Fusionar reportes Cobertura en un único XML (OpenCover) ---
-      - name: Merge Coverage Reports (OpenCover format)
+      # --- 9️⃣ Fusionar reportes Cobertura ---
+      - name: Merge Coverage Reports (Cobertura format)
         run: |
-          echo "🔧 Fusionando reportes de cobertura en formato OpenCover..."
+          echo "🔧 Fusionando reportes Cobertura..."
           dotnet tool install -g dotnet-reportgenerator-globaltool
           export PATH="$PATH:/home/runner/.dotnet/tools"
           reportgenerator \
             -reports:"Unidad1_AsegurandoCodigoFuente/**/coverage.cobertura.xml" \
             -targetdir:"coveragereport" \
-            -reporttypes:OpenCover
-          
-          cp coveragereport/OpenCover.xml coverage-merged.xml
+            -reporttypes:Cobertura
+
+          cp coveragereport/Cobertura.xml coverage-merged.xml
           echo "✅ Archivo combinado creado:"
           ls -l coverage-merged.xml
           head -n 10 coverage-merged.xml
