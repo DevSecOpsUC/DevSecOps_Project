@@ -1,22 +1,36 @@
-# Etapa 1: Build
+# ============================
+# 🧱 Etapa 1: Compilación (Build)
+# ============================
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiar y restaurar dependencias
-COPY Unidad1_AsegurandoCodigoFuente/rooms-service/rooms-service.csproj ./
-RUN dotnet restore rooms-service.csproj
+# 🔹 Copiar los proyectos necesarios
+COPY Unidad1_AsegurandoCodigoFuente/Common/*.csproj ./Common/
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/*.csproj ./rooms-service/
 
-# Copiar el código fuente y publicar
-COPY Unidad1_AsegurandoCodigoFuente/rooms-service/ ./
-RUN dotnet publish -c Release -o /app/publish
+# 🔹 Restaurar dependencias (incluye Common)
+RUN dotnet restore ./rooms-service/rooms-service.csproj
 
-# Etapa 2: Runtime
+# 🔹 Copiar todo el código fuente al contenedor
+COPY Unidad1_AsegurandoCodigoFuente/Common/. ./Common/
+COPY Unidad1_AsegurandoCodigoFuente/rooms-service/. ./rooms-service/
+
+# 🔹 Publicar el proyecto en modo Release
+WORKDIR /src/rooms-service
+RUN dotnet publish -c Release -o /app/publish --no-restore
+
+# ============================
+# 🚀 Etapa 2: Ejecución (Runtime)
+# ============================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# 🔹 Asegurar que el servicio escuche en puerto 80
+# 🔹 Variables de entorno y puerto
 ENV ASPNETCORE_URLS=http://+:80
 EXPOSE 80
 
+# 🔹 Copiar resultado de compilación desde la etapa anterior
 COPY --from=build /app/publish .
+
+# 🔹 Ejecutar el servicio
 ENTRYPOINT ["dotnet", "rooms-service.dll"]

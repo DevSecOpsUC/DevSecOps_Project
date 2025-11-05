@@ -1,28 +1,36 @@
-# Etapa 1: Compilación
+# ============================
+# 🧱 Etapa 1: Compilación (Build)
+# ============================
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiar archivo de proyecto y restaurar dependencias
+# 🔹 Copiar los proyectos necesarios
+COPY Unidad1_AsegurandoCodigoFuente/Common/*.csproj ./Common/
 COPY Unidad1_AsegurandoCodigoFuente/auth-service/*.csproj ./auth-service/
+
+# 🔹 Restaurar dependencias (incluye Common)
+RUN dotnet restore ./auth-service/auth-service.csproj
+
+# 🔹 Copiar todo el código fuente al contenedor
+COPY Unidad1_AsegurandoCodigoFuente/Common/. ./Common/
+COPY Unidad1_AsegurandoCodigoFuente/auth-service/. ./auth-service/
+
+# 🔹 Publicar el proyecto en modo Release
 WORKDIR /src/auth-service
-RUN dotnet restore
+RUN dotnet publish -c Release -o /app/publish --no-restore
 
-# Copiar todo el código fuente
-COPY Unidad1_AsegurandoCodigoFuente/auth-service/. .
-
-# Publicar el proyecto en modo Release
-RUN dotnet publish -c Release -o /app/publish
-
-# Etapa 2: Runtime
+# ============================
+# 🚀 Etapa 2: Ejecución (Runtime)
+# ============================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# 🔹 Muy importante: Azure y Docker usan el puerto 80
+# 🔹 Variables de entorno y puerto
 ENV ASPNETCORE_URLS=http://+:80
 EXPOSE 80
 
-# Copiar el resultado de la compilación
+# 🔹 Copiar resultado de compilación desde la etapa anterior
 COPY --from=build /app/publish .
 
-# 🔹 Ejecutar el DLL del proyecto (verifica que coincida con tu .csproj)
+# 🔹 Ejecutar el servicio
 ENTRYPOINT ["dotnet", "auth-service.dll"]
