@@ -6,12 +6,12 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened ]
   schedule:
-    - cron: '0 2 * * 1'
+    - cron: '0 2 * * 1' # Lunes a las 2 AM
 
 jobs:
-  sonar-analyze:
+  sonarcloud:
     runs-on: ubuntu-latest
-    name: SonarCloud Multi-Project Analysis
+    name: SonarCloud Analysis (.NET + JS)
 
     steps:
       # --- 1️⃣ Clonar repositorio ---
@@ -20,24 +20,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      # --- 2️⃣ Azure Login ---
+      # --- 2️⃣ Login en Azure (para secretos) ---
       - name: 🔑 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Obtener secretos desde Key Vault ---
+      # --- 3️⃣ Obtener secretos de SonarCloud desde Key Vault ---
       - name: 🔐 Load SonarCloud secrets from Azure Key Vault
         id: get-sonar
         run: |
           TOKEN=$(az keyvault secret show --name "SONAR-TOKEN" --vault-name "kv-devsecopsuc" --query value -o tsv)
-          PROJECT_KEY=$(az keyvault secret show --name "SONAR-PROJECT-KEY" --vault-name "kv-devsecopsuc" --query value -o tsv)
-          ORGANIZATION=$(az keyvault secret show --name "SONAR-ORGANIZATION" --vault-name "kv-devsecopsuc" --query value -o tsv)
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
-          echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
-          echo "organization=$ORGANIZATION" >> $GITHUB_OUTPUT
 
-      # --- 4️⃣ Preparar entorno ---
+      # --- 4️⃣ Preparar entornos ---
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -49,7 +45,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # --- 5️⃣ Instalar Sonar Scanner ---
+      # --- 5️⃣ Instalar SonarScanner ---
       - name: Cache Sonar Scanner
         id: cache-sonar
         uses: actions/cache@v4
@@ -64,72 +60,27 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/scanner"
           dotnet tool install dotnet-sonarscanner --version 5.* --tool-path "${RUNNER_TEMP}/scanner"
 
-      # =============================
-      # 🔹 ANALISIS AUTH-SERVICE
-      # =============================
-      - name: 🔍 Analyze auth-service (.NET)
-        working-directory: Unidad1_AsegurandoCodigoFuente/auth-service
+      # --- 6️⃣ Iniciar análisis (usando .sonarcloud.properties) ---
+      - name: Begin SonarCloud analysis
         env:
-          SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
-          SONAR_ORGANIZATION: ${{ steps.get-sonar.outputs.organization }}
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
         run: |
           SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          echo "Starting analysis for auth-service..."
-          "$SCANNER" begin \
-            /k:"$SONAR_PROJECT_KEY:auth-service" \
-            /o:"$SONAR_ORGANIZATION" \
-            /d:sonar.token="$SONAR_TOKEN" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.projectName="auth-service" \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**"
-          dotnet restore
-          dotnet build --configuration Release
-          "$SCANNER" end /d:sonar.token="$SONAR_TOKEN"
+          "$SCANNER" begin /d:sonar.token="$SONAR_TOKEN"
 
-      # =============================
-      # 🔹 ANALISIS ROOMS-SERVICE
-      # =============================
-      - name: 🔍 Analyze rooms-service (.NET)
-        working-directory: Unidad1_AsegurandoCodigoFuente/rooms-service
-        env:
-          SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
-          SONAR_ORGANIZATION: ${{ steps.get-sonar.outputs.organization }}
-          SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
+      # --- 7️⃣ Compilar todos los proyectos .NET ---
+      - name: Restore & Build .NET projects
         run: |
-          SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          echo "Starting analysis for rooms-service..."
-          "$SCANNER" begin \
-            /k:"$SONAR_PROJECT_KEY:rooms-service" \
-            /o:"$SONAR_ORGANIZATION" \
-            /d:sonar.token="$SONAR_TOKEN" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.projectName="rooms-service" \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**"
-          dotnet restore
-          dotnet build --configuration Release
-          "$SCANNER" end /d:sonar.token="$SONAR_TOKEN"
+          echo "Compilando proyectos .NET..."
+          for sln in $(find Unidad1_AsegurandoCodigoFuente -name "*.sln"); do
+            dotnet restore "$sln"
+            dotnet build "$sln" --configuration Release
+          done
 
-      # =============================
-      # 🔹 ANALISIS FRONTEND (Unidad 2)
-      # =============================
-      - name: 🔍 Analyze frontend (Unidad2 JS/HTML/CSS)
-        working-directory: Unidad2_DespliegueSeguro
+      # --- 8️⃣ Finalizar análisis ---
+      - name: End SonarCloud analysis
         env:
-          SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
-          SONAR_ORGANIZATION: ${{ steps.get-sonar.outputs.organization }}
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
         run: |
-          echo "Starting analysis for frontend (Unidad 2)..."
           SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          "$SCANNER" begin \
-            /k:"$SONAR_PROJECT_KEY:frontend" \
-            /o:"$SONAR_ORGANIZATION" \
-            /d:sonar.token="$SONAR_TOKEN" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.projectName="frontend" \
-            /d:sonar.language="js" \
-            /d:sonar.sources="." \
-            /d:sonar.inclusions="**/*.js,**/*.html,**/*.css" \
-            /d:sonar.exclusions="**/node_modules/**,**/bin/**,**/obj/**"
           "$SCANNER" end /d:sonar.token="$SONAR_TOKEN"
