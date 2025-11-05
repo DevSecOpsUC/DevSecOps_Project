@@ -50,19 +50,9 @@ jobs:
           dotnet-version: '8.0.x'
 
       # --- 5️⃣ Instalar SonarScanner ---
-      - name: Cache Sonar Scanner
-        id: cache-sonar
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/scanner
-          key: ${{ runner.os }}-sonar-scanner
-          restore-keys: ${{ runner.os }}-sonar-scanner
-
       - name: Install dotnet-sonarscanner
-        if: steps.cache-sonar.outputs.cache-hit != 'true'
         run: |
-          mkdir -p "${RUNNER_TEMP}/scanner"
-          dotnet tool install dotnet-sonarscanner --version 5.* --tool-path "${RUNNER_TEMP}/scanner"
+          dotnet tool install --global dotnet-sonarscanner --version 5.*
 
       # --- 6️⃣ Iniciar análisis SonarCloud ---
       - name: Begin SonarCloud analysis
@@ -71,34 +61,30 @@ jobs:
           SONAR_PROJECT_KEY: ${{ steps.get-sonar.outputs.project_key }}
           SONAR_ORGANIZATION: ${{ steps.get-sonar.outputs.organization }}
         run: |
-          SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          "$SCANNER" begin \
+          dotnet sonarscanner begin \
             /k:"$SONAR_PROJECT_KEY" \
             /o:"$SONAR_ORGANIZATION" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.cobertura.xml" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
-            /d:sonar.inclusions="**/*.cs,**/*.js,**/*.html,**/*.css" \
-            /d:sonar.exclusions="Unidad3_GobernanzayCumplimiento/**,**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
-            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.cobertura.xml"
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/*.yml,**/Dockerfile"
 
       # --- 7️⃣ Compilar proyectos .NET ---
-      - name: Restore & Build .NET projects
+      - name: Build solution
         run: |
-          echo "Compilando proyectos .NET..."
-          for sln in $(find Unidad1_AsegurandoCodigoFuente -name "*.sln"); do
-            dotnet restore "$sln"
-            dotnet build "$sln" --configuration Release
-          done
+          dotnet restore Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln
+          dotnet build Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura ---
+      # --- 8️⃣ Ejecutar pruebas unitarias con cobertura (formato Cobertura) ---
       - name: Run Unit Tests with Coverage
         run: |
           echo "Ejecutando pruebas unitarias y recolectando cobertura..."
           for testproj in $(find Unidad1_AsegurandoCodigoFuente -name "*.Tests.csproj"); do
             dotnet test "$testproj" --configuration Release --no-build \
-              --collect:"XPlat Code Coverage" \
-              --results-directory ./TestResults
+              /p:CollectCoverage=true \
+              /p:CoverletOutputFormat=cobertura \
+              /p:CoverletOutput=./TestResults/coverage.cobertura.xml
           done
 
       # --- 9️⃣ Finalizar análisis SonarCloud ---
@@ -106,5 +92,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
         run: |
-          SCANNER="${RUNNER_TEMP}/scanner/dotnet-sonarscanner"
-          "$SCANNER" end /d:sonar.token="$SONAR_TOKEN"
+          dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
