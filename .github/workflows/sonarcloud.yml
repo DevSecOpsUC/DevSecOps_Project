@@ -50,7 +50,7 @@ jobs:
         run: |
           dotnet tool install --global dotnet-sonarscanner --version 5.*
           echo "PATH=$PATH:/home/runner/.dotnet/tools" >> $GITHUB_ENV
-          
+
       # --- 6️⃣ Begin SonarCloud analysis ---
       - name: ☁️ Begin SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
@@ -65,8 +65,8 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.scm.provider=git \
+            /d:sonar.cs.cobertura.reportsPaths="TestResults/Coverage/*.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/Program.cs,**/Program.Partial.cs,**/bin/**,**/obj/**,**/TestResults/**" \
-            /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile"
 
       # --- 7️⃣ Build solution ---

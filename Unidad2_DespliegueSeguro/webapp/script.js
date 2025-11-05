@@ -9,7 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const roomsDiv = document.getElementById("rooms");
 
   // 🔹 Detectar si está en Azure
-  const isAzure = location.hostname.includes("azurewebsites.net");
+  const hostname = location.hostname;
+  const isAzure = hostname.endsWith(".azurewebsites.net");
 
   // 🔹 Usar URLs absolutas cuando esté desplegado en Azure
   const AUTH_BASE = isAzure
