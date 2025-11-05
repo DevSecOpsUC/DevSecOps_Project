@@ -66,9 +66,11 @@ jobs:
             /o:"$SONAR_ORGANIZATION" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.cobertura.xml" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente,Unidad2_DespliegueSeguro" \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/*.yml,**/Dockerfile"
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/Dockerfile,**/*.yml" \
+            /d:sonar.cs.opencover.reportsPaths="Unidad1_AsegurandoCodigoFuente/**/TestResults/**/coverage.cobertura.xml" \
+            /d:sonar.coverageReportPaths="Unidad1_AsegurandoCodigoFuente/**/TestResults/**/coverage.cobertura.xml"
+
 
       # --- 7️⃣ Compilar proyectos .NET ---
       - name: Build solution
