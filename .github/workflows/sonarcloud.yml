@@ -50,7 +50,7 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner --version 5.*
           echo "PATH=$PATH:/home/runner/.dotnet/tools" >> $GITHUB_ENV
 
-      # --- 6️⃣ Iniciar análisis (mismo directorio que .sln) ---
+      # --- 6️⃣ Iniciar análisis ---
       - name: ☁️ Begin SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
         env:
@@ -63,23 +63,25 @@ jobs:
             /o:"$SONAR_ORGANIZATION" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.sources="." \
+            /d:sonar.scm.provider=git \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
-            /d:sonar.scm.provider=git
+            /d:sonar.modules="auth-service,rooms-service" \
+            /d:sonar.sources="auth-service,rooms-service"
 
-      # --- 7️⃣ Compilar (misma carpeta) ---
+      # --- 7️⃣ Compilar solución ---
       - name: 🏗️ Build solution
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
           dotnet restore AsegurandoCodigo.sln
           dotnet build AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Pruebas unitarias con cobertura ---
+      # --- 8️⃣ Ejecutar pruebas con cobertura ---
       - name: 🧪 Run Unit Tests with Coverage
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
+          echo "🧪 Ejecutando pruebas..."
           dotnet test auth-service.Tests/auth-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
@@ -95,7 +97,7 @@ jobs:
           echo "📁 Archivos de cobertura generados:"
           find . -name "coverage.cobertura.xml"
 
-      # --- 9️⃣ Finalizar análisis (misma carpeta) ---
+      # --- 9️⃣ Finalizar análisis ---
       - name: 🧾 End SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
         env:
