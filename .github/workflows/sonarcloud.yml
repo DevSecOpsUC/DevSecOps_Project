@@ -50,8 +50,8 @@ jobs:
         run: |
           dotnet tool install --global dotnet-sonarscanner --version 5.*
           echo "PATH=$PATH:/home/runner/.dotnet/tools" >> $GITHUB_ENV
-
-      # --- 6️⃣ Begin analysis ---
+          
+      # --- 6️⃣ Begin SonarCloud analysis ---
       - name: ☁️ Begin SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
         env:
@@ -65,12 +65,7 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.scm.provider=git \
-            /d:sonar.modules="auth-service,rooms-service" \
-            /d:auth-service.sonar.projectBaseDir="auth-service" \
-            /d:auth-service.sonar.sources="." \
-            /d:rooms-service.sonar.projectBaseDir="rooms-service" \
-            /d:rooms-service.sonar.sources="." \
-            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+            /d:sonar.cs.cobertura.reportsPaths="TestResults/Coverage/*.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile"
 
@@ -81,24 +76,26 @@ jobs:
           dotnet restore AsegurandoCodigo.sln
           dotnet build AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Ejecutar tests con cobertura OpenCover ---
+      # --- 8️⃣ Ejecutar tests con cobertura (ruta fija) ---
       - name: 🧪 Run Unit Tests with Coverage
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
+          mkdir -p TestResults/Coverage
+
           dotnet test auth-service.Tests/auth-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=TestResults/coverage/
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=TestResults/Coverage/auth-coverage.cobertura.xml
 
           dotnet test rooms-service.Tests/rooms-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=TestResults/coverage/
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=TestResults/Coverage/rooms-coverage.cobertura.xml
 
           echo "📁 Archivos de cobertura generados:"
-          find . -name "coverage.opencover.xml"
+          find TestResults/Coverage -name "*.xml"
 
       # --- 9️⃣ End analysis ---
       - name: 🧾 End SonarCloud analysis
