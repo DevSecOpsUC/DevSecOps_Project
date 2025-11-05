@@ -1,4 +1,4 @@
-name: "SonarCloud - DevSecOpsUC (.NET + JS)"
+name: "SonarCloud - DevSecOpsUC (.NET)"
 
 on:
   push:
@@ -12,19 +12,18 @@ jobs:
     name: SonarCloud Analysis
 
     steps:
-      # --- 1️⃣ Checkout del código ---
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # --- 1️⃣ Checkout ---
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --- 2️⃣ Login Azure ---
+      # --- 2️⃣ Azure Login ---
       - name: 🔑 Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Cargar secretos desde Key Vault ---
+      # --- 3️⃣ Obtener secretos desde Key Vault ---
       - name: 🔐 Load SonarCloud secrets
         id: get-sonar
         run: |
@@ -35,7 +34,7 @@ jobs:
           echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
           echo "org=$ORG" >> $GITHUB_OUTPUT
 
-      # --- 4️⃣ Preparar entorno ---
+      # --- 4️⃣ Instalar .NET y Java ---
       - name: Set up .NET and Java
         run: |
           sudo apt-get update
@@ -66,15 +65,15 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sources="Unidad1_AsegurandoCodigoFuente" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
-            /d:sonar.coverageReportPaths="Unidad1_AsegurandoCodigoFuente/**/coverage.cobertura.xml"
+            /d:sonar.coverageReportPaths="Unidad1_AsegurandoCodigoFuente/auth-service.Tests/TestResults/coverage.cobertura.xml,Unidad1_AsegurandoCodigoFuente/rooms-service.Tests/TestResults/coverage.cobertura.xml"
 
-      # --- 7️⃣ Compilar ---
+      # --- 7️⃣ Compilar solución ---
       - name: Build solution
         run: |
           dotnet restore Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln
           dotnet build Unidad1_AsegurandoCodigoFuente/AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Ejecutar pruebas unitarias ---
+      # --- 8️⃣ Ejecutar pruebas con cobertura ---
       - name: Run Unit Tests with Coverage
         run: |
           echo "🧪 Ejecutando pruebas unitarias..."
@@ -90,10 +89,10 @@ jobs:
             /p:CoverletOutputFormat=cobertura \
             /p:CoverletOutput=TestResults/
 
-          echo "📁 Archivos de cobertura encontrados:"
+          echo "📁 Cobertura generada:"
           find Unidad1_AsegurandoCodigoFuente -name "coverage.cobertura.xml" || true
 
-      # --- 🔟 Finalizar análisis ---
+      # --- 9️⃣ Finalizar análisis ---
       - name: End SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ steps.get-sonar.outputs.token }}
