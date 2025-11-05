@@ -65,7 +65,7 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.scm.provider=git \
-            /d:sonar.cs.cobertura.reportsPaths="TestResults/Coverage/*.cobertura.xml" \
+            /d:sonar.coverage.exclusions="**/Program.cs,**/Program.Partial.cs,**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile"
 
