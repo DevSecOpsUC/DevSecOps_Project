@@ -1,1 +1,4 @@
-public partial class Program { } // habilita WebApplicationFactory<Program>
+namespace AuthService
+{
+    public partial class Program { } // habilita WebApplicationFactory<Program>
+}
