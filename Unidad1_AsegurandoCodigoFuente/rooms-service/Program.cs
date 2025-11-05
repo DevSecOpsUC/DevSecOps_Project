@@ -81,6 +81,6 @@ app.MapGet("/api/rooms", () =>
 });
 
 // 🔹 Configurar el puerto HTTP
-app.Urls.Add("http://0.0.0.0:80");
+app.Urls.Add("https://0.0.0.0:80");
 
 app.Run();

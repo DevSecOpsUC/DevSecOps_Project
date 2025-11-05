@@ -47,7 +47,7 @@ public class Program
             }
         });
 
-        app.Urls.Add("http://0.0.0.0:80");
+        app.Urls.Add("https://0.0.0.0:80");
         app.Run();
     }
 
