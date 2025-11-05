@@ -23,7 +23,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # --- 3️⃣ Obtener secretos de SonarCloud ---
+      # --- 3️⃣ Obtener secretos ---
       - name: 🔐 Load SonarCloud secrets
         id: get-sonar
         run: |
@@ -34,7 +34,7 @@ jobs:
           echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
           echo "org=$ORG" >> $GITHUB_OUTPUT
 
-      # --- 4️⃣ Instalar entornos ---
+      # --- 4️⃣ Entornos ---
       - name: ⚙️ Setup .NET y Java
         uses: actions/setup-dotnet@v4
         with:
@@ -44,13 +44,13 @@ jobs:
           distribution: 'zulu'
           java-version: 17
 
-      # --- 5️⃣ Instalar SonarScanner ---
+      # --- 5️⃣ SonarScanner ---
       - name: 🧰 Install SonarScanner
         run: |
           dotnet tool install --global dotnet-sonarscanner --version 5.*
           echo "PATH=$PATH:/home/runner/.dotnet/tools" >> $GITHUB_ENV
 
-      # --- 6️⃣ Iniciar análisis ---
+      # --- 6️⃣ Begin analysis (solo módulos) ---
       - name: ☁️ Begin SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
         env:
@@ -61,43 +61,46 @@ jobs:
           dotnet sonarscanner begin \
             /k:"$SONAR_PROJECT_KEY" \
             /o:"$SONAR_ORGANIZATION" \
+            /d:sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.scm.provider=git \
+            /d:sonar.modules="auth-service,rooms-service" \
+            /d:auth-service.sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente/auth-service" \
+            /d:auth-service.sonar.sources="." \
+            /d:rooms-service.sonar.projectBaseDir="Unidad1_AsegurandoCodigoFuente/rooms-service" \
+            /d:rooms-service.sonar.sources="." \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml" \
             /d:sonar.coverage.exclusions="**/bin/**,**/obj/**,**/TestResults/**" \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile" \
-            /d:sonar.modules="auth-service,rooms-service" \
-            /d:sonar.sources="auth-service,rooms-service"
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.yml,**/node_modules/**,**/Dockerfile"
 
-      # --- 7️⃣ Compilar solución ---
+      # --- 7️⃣ Build solution ---
       - name: 🏗️ Build solution
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
           dotnet restore AsegurandoCodigo.sln
           dotnet build AsegurandoCodigo.sln --configuration Release --no-restore
 
-      # --- 8️⃣ Ejecutar pruebas con cobertura ---
+      # --- 8️⃣ Test con cobertura ---
       - name: 🧪 Run Unit Tests with Coverage
         working-directory: Unidad1_AsegurandoCodigoFuente
         run: |
-          echo "🧪 Ejecutando pruebas..."
           dotnet test auth-service.Tests/auth-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
             /p:CoverletOutput=TestResults/
-
+          
           dotnet test rooms-service.Tests/rooms-service.Tests.csproj \
             --configuration Release --no-build \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
             /p:CoverletOutput=TestResults/
 
-          echo "📁 Archivos de cobertura generados:"
+          echo "📁 Archivos de cobertura encontrados:"
           find . -name "coverage.cobertura.xml"
 
-      # --- 9️⃣ Finalizar análisis ---
+      # --- 9️⃣ End analysis ---
       - name: 🧾 End SonarCloud analysis
         working-directory: Unidad1_AsegurandoCodigoFuente
         env:
