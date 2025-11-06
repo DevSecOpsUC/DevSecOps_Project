@@ -148,13 +148,6 @@ Integración CI/CD mediante **workflows YAML** que gestionan análisis, construc
 Proyecto educativo bajo licencia **MIT**.  
 Uso libre con fines académicos y de formación profesional.  
 
----
-
-## 🖼️ Vista General del Proyecto
-
-_Agrega aquí capturas de tus despliegues, pipelines o dashboards de Sentinel y SonarCloud._
-
----
 
 © **2025 – Universidad Católica de Colombia**  
 **Manual de Buenas Prácticas DevSecOps — Proyecto Académico**
