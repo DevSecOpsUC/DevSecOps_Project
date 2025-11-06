@@ -125,29 +125,12 @@ Integración CI/CD mediante **workflows YAML** que gestionan análisis, construc
 
 ---
 
-## 🧰 Resultados Esperados
-
-- Validación de prácticas seguras en el ciclo DevSecOps.  
-- Documentación completa para formación universitaria.  
-- Despliegue funcional en la nube bajo políticas CAF.  
-- Ejemplo de aplicación académica lista para evaluación o réplica por otros equipos.  
-
----
-
 ## 🧑‍💻 Autores
 
 | **Nombre** | **Rol** | **Institución** |
 |-------------|----------|-----------------|
 | **Felipe Barrios** | Autor Principal – Implementación Técnica y Documentación | Universidad Católica de Colombia |
 | **Allison López** | Autor Principal – Implementación Técnica y Documentación | Universidad Católica de Colombia |
-
----
-
-## 🧾 Licencia
-
-Proyecto educativo bajo licencia **MIT**.  
-Uso libre con fines académicos y de formación profesional.  
-
 
 © **2025 – Universidad Católica de Colombia**  
 **Manual de Buenas Prácticas DevSecOps — Proyecto Académico**
