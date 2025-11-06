@@ -139,7 +139,7 @@ Integración CI/CD mediante **workflows YAML** que gestionan análisis, construc
 | **Nombre** | **Rol** | **Institución** |
 |-------------|----------|-----------------|
 | **Felipe Barrios** | Autor Principal – Implementación Técnica y Documentación | Universidad Católica de Colombia |
-| **Allison López** | Colaboradora – Documentación y gobernanza en Azure | Universidad Católica de Colombia |
+| **Allison López** | Autor Principal – Implementación Técnica y Documentación | Universidad Católica de Colombia |
 
 ---
 
