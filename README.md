@@ -47,6 +47,7 @@ DevSecOps_Project/
 │
 └── .github/
     └── workflows/
+```
 
 ## ⚙️ Tecnologías y Herramientas Utilizadas
 
