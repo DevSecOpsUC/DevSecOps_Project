@@ -10,7 +10,7 @@
     <!-- Habilita tipos ASP.NET Core (WebApplication, etc.) -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <!-- Extensiones de hosting: IsDevelopment() -->
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
     <!-- Swagger (AddSwaggerGen, UseSwagger, UseSwaggerUI) -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
