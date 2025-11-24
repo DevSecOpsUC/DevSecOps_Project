@@ -12,7 +12,7 @@
     <!-- Extensiones de hosting: IsDevelopment() -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <!-- Swagger (AddSwaggerGen, UseSwagger, UseSwaggerUI) -->
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
   </ItemGroup>
 
 </Project>
