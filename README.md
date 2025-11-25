@@ -4,16 +4,6 @@
 > Facultad de Ingeniería — Programa de Ingeniería de Sistemas  
 > **Proyecto Académico: Implementación de un Entorno DevSecOps Completo**
 
----
-
-![Build Status](https://img.shields.io/github/actions/workflow/status/FelipeBarrios/DevSecOps_Project/sonarcloud.yml?label=Build%20Status&logo=github&color=brightgreen)
-![SonarCloud](https://img.shields.io/sonar/quality_gate/FelipeBarrios_DevSecOps_Project?server=https%3A%2F%2Fsonarcloud.io&logo=sonarcloud&color=orange)
-![CodeQL](https://img.shields.io/github/actions/workflow/status/FelipeBarrios/DevSecOps_Project/codeql-analysis.yml?label=CodeQL%20SAST&logo=github&color=blue)
-![DockerHub](https://img.shields.io/badge/Docker%20Images-Automated%20Builds-blue?logo=docker)
-![Azure Deploy](https://img.shields.io/badge/Deployed%20on-Azure%20Web%20App-blue?logo=microsoftazure)
-![License](https://img.shields.io/badge/License-MIT-green)
-
----
 
 ## 📘 Descripción General
 
